@@ -1,0 +1,114 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="源文件">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="头文件">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="资源文件">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="websocket">
+      <UniqueIdentifier>{31afdd2d-8231-4c64-b24e-bbe53c9fe322}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="websocket\src">
+      <UniqueIdentifier>{c16477ce-9f8f-446e-8c6a-d80c6cc232fb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="websocket\include">
+      <UniqueIdentifier>{c6d79386-060b-490a-87ee-86143b3f7424}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="stdafx.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="websocket\include\WsCli.h">
+      <Filter>websocket\include</Filter>
+    </ClInclude>
+    <ClInclude Include="websocket\include\WsServer.h">
+      <Filter>websocket\include</Filter>
+    </ClInclude>
+    <ClInclude Include="websocket\include\WsState.h">
+      <Filter>websocket\include</Filter>
+    </ClInclude>
+    <ClInclude Include="websocket\include\WsMgr.h">
+      <Filter>websocket\include</Filter>
+    </ClInclude>
+    <ClInclude Include="websocket\include\wsprotocol.h">
+      <Filter>websocket\include</Filter>
+    </ClInclude>
+    <ClInclude Include="websocket\include\WsInput.h">
+      <Filter>websocket\include</Filter>
+    </ClInclude>
+    <ClInclude Include="websocket\include\WsHandlerMgr.h">
+      <Filter>websocket\include</Filter>
+    </ClInclude>
+    <ClInclude Include="websocket\include\WsHandler.h">
+      <Filter>websocket\include</Filter>
+    </ClInclude>
+    <ClInclude Include="websocket\include\WsGetHandler.h">
+      <Filter>websocket\include</Filter>
+    </ClInclude>
+    <ClInclude Include="websocket\include\WsUpgradeHandler.h">
+      <Filter>websocket\include</Filter>
+    </ClInclude>
+    <ClInclude Include="websocket\include\WsMsg.h">
+      <Filter>websocket\include</Filter>
+    </ClInclude>
+    <ClInclude Include="websocket\include\WsMsgParse.h">
+      <Filter>websocket\include</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="WebSocket.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="websocket\src\WsServer.cpp">
+      <Filter>websocket\src</Filter>
+    </ClCompile>
+    <ClCompile Include="websocket\src\WsCli.cpp">
+      <Filter>websocket\src</Filter>
+    </ClCompile>
+    <ClCompile Include="websocket\src\WsState.cpp">
+      <Filter>websocket\src</Filter>
+    </ClCompile>
+    <ClCompile Include="websocket\src\WsMgr.cpp">
+      <Filter>websocket\src</Filter>
+    </ClCompile>
+    <ClCompile Include="websocket\src\WsInput.cpp">
+      <Filter>websocket\src</Filter>
+    </ClCompile>
+    <ClCompile Include="websocket\src\WsHandlerMgr.cpp">
+      <Filter>websocket\src</Filter>
+    </ClCompile>
+    <ClCompile Include="websocket\src\WsHandler.cpp">
+      <Filter>websocket\src</Filter>
+    </ClCompile>
+    <ClCompile Include="websocket\src\WsGetHandler.cpp">
+      <Filter>websocket\src</Filter>
+    </ClCompile>
+    <ClCompile Include="websocket\src\WsUpgradeHandler.cpp">
+      <Filter>websocket\src</Filter>
+    </ClCompile>
+    <ClCompile Include="websocket\src\WsMsg.cpp">
+      <Filter>websocket\src</Filter>
+    </ClCompile>
+    <ClCompile Include="websocket\src\WsMsgParse.cpp">
+      <Filter>websocket\src</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
