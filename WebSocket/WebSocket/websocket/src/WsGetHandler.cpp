@@ -22,7 +22,7 @@ int CWsGetHandler::ProcMsg(CWsMsg* pMsg) {
         LOG_ERR("html:%s not exist", strPwd.c_str());
     }
 
-    ASSERT_RET_VALUE(lHtml.iLen > 0, 1);
+    ASSERT_RET_VALUE(lHtml.iLen > 0 && lHtml.pStr, 1);
     char szTmp[200];
     snprintf(szTmp, 200, "HTTP/1.1 200 OK\r\nContent-Type: html\r\nContent-Length: %d\r\n\r\n", (int)lHtml.iLen);
     ssize_t iDataLen = strlen(szTmp) + lHtml.iLen;
@@ -35,6 +35,9 @@ int CWsGetHandler::ProcMsg(CWsMsg* pMsg) {
     if (pMsg->GetCli()) {
         pMsg->GetCli()->Send(pData, iDataLen);
     }
+
+    DOFREE(lHtml.pStr);
+    DOFREE(pData);
 
     return 0;
 }
