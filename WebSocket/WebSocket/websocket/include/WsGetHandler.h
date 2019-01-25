@@ -9,11 +9,6 @@ public:
 
 public:
     int ProcMsg(CWsMsg* pMsg);
-
-private:
-    bool mbLoadHtml;
-    static len_str mlHtml;
-    CUvMutex mcHtmlMux;
 };
 
 #endif

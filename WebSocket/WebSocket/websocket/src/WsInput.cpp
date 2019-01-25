@@ -24,11 +24,11 @@ int CWsInput::ParseMsg(len_str& lStr) {
     ASSERT_RET_VALUE(lStr.iLen > 0 && lStr.pStr, 1);
     if (WS_STATE_NONE == miState) {
         if (str_start_with(lStr.pStr, GET)) {
+            mstrProtocol = GET;
             if (strstr(lStr.pStr, WEBSOCKETKEY)) {
                 mstrProtocol = WEBSOCKETKEY;
             }
 
-            mstrProtocol = GET;
             CWsMsg* pWsMsg = new CWsMsg(mstrProtocol, mpCli);
             std::string strHttp(lStr.pStr, lStr.iLen);
             pWsMsg->SetHttpMsg(strHttp);
@@ -53,7 +53,7 @@ int CWsInput::ParseMsg(len_str& lStr) {
             }
             else {
                 char* psrcTmp = (char*)do_malloc((lStr.iLen + mstMsgCache.iUse) * sizeof(char));
-                memcpy(psrcTmp, mstMsgCache.pData + mstMsgCache.iUse, mstMsgCache.iUse);
+                memcpy(psrcTmp, mstMsgCache.pData, mstMsgCache.iUse);
                 memcpy(psrcTmp + mstMsgCache.iUse, lStr.pStr, lStr.iLen);
                 DOFREE(mstMsgCache.pData);
                 mstMsgCache.pData = psrcTmp;
@@ -80,6 +80,7 @@ int CWsInput::ParseMsg(len_str& lStr) {
 }
 
 int CWsInput::ProcMsg() {
+    LOG_INFO("Enter CWsInput::ProcMsg");
     for (;;) {
         len_str lstr;
         memset(&lstr, 0, sizeof(lstr));

@@ -49,26 +49,22 @@ CWsUpgradeHandler::~CWsUpgradeHandler(){
 }
 
 int CWsUpgradeHandler::ProcMsg(CWsMsg* pMsg) {
+    LOG_INFO("Enter CWsUpgradeHandler::ProcMsg");
     ASSERT_RET_VALUE(pMsg, 1);
     std::istringstream stream(pMsg->GetHttpMsg().c_str());
     std::string header;
     std::string::size_type pos = 0;
     std::string websocketKey;
     std::string websocketProtocol;
-    while (std::getline(stream, header) && header != "\r")
-    {
+    while (std::getline(stream, header) && header != "\r"){
         header.erase(header.end() - 1);
         pos = header.find(": ", 0);
-        if (pos != std::string::npos)
-        {
+        if (pos != std::string::npos){
             std::string key = header.substr(0, pos);
             std::string value = header.substr(pos + 2);
-            if (key == WEBSOCKETKEY)
-            {
+            if (key == WEBSOCKETKEY){
                 websocketKey = value;
-            }
-            else  if (key == WEBSOCKETPROTOCOL)
-            {
+            } else  if (key == WEBSOCKETPROTOCOL) {
                 websocketProtocol = value;
             }
         }

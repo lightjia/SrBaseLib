@@ -50,6 +50,7 @@ len_str CWsMsgParse::EncodeMsg(const char* pData, const size_t iLen, int iFrameT
     // Ìî³äÊı¾İ  
     size_t frameSize = frameHeaderSize + iLen;
     lRet.pStr = (char*)do_malloc((frameSize)*sizeof(char));
+    lRet.iLen = frameSize;
     memcpy(lRet.pStr, pFrameHead, frameHeaderSize);
     memcpy(lRet.pStr + frameHeaderSize, pData, iLen);
 
@@ -107,7 +108,7 @@ int CWsMsgParse::DecodeMsg(tagWsMsgCache* pMsgCache, tagWsMsg** pWsMsg) {
 
         if (pMsgCache->iUse == iFrameLen) {
             pMsgCache->iUse = 0;
-            return 1;
+            return 0;
         }
 
 

@@ -1,6 +1,7 @@
 #include "WsHandlerMgr.h"
 #include "WsGetHandler.h"
 #include "WsUpgradeHandler.h"
+#include "WsEchoHandler.h"
 CWsHandlerMgr::CWsHandlerMgr(){
     mbInit = false;
 }
@@ -14,6 +15,8 @@ int CWsHandlerMgr::Init() {
         pair_handler = mmapHandlers.insert(std::make_pair(GET, new CWsGetHandler()));
         ASSERT_RET_VALUE(pair_handler.second, 1);
         pair_handler = mmapHandlers.insert(std::make_pair(WEBSOCKETKEY, new CWsUpgradeHandler()));
+        ASSERT_RET_VALUE(pair_handler.second, 1);
+        pair_handler = mmapHandlers.insert(std::make_pair(ECHO, new CWsEchoHandler()));
         ASSERT_RET_VALUE(pair_handler.second, 1);
         mbInit = true;
     }
@@ -39,6 +42,7 @@ CWsHandler* CWsHandlerMgr::GetHandler(std::string& strProtocol) {
 
 int CWsHandlerMgr::ProcMsg(CWsMsg* pMsg) {
     ASSERT_RET_VALUE(pMsg && mbInit, 1);
+    LOG_INFO("Enter CWsHandlerMgr::ProcMsg:%s", pMsg->GetProtocol().c_str());
     CWsHandler* pHandler = GetHandler(pMsg->GetProtocol());
     ASSERT_RET_VALUE(pHandler, 1);
 

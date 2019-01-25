@@ -9,7 +9,10 @@ CWsMsg::CWsMsg(std::string& strProtocol, CWsCli* pCli){
 
 CWsMsg::~CWsMsg(){
     UNREF(mpCli);
-    DOFREE(mpMsg);
+    if (mpMsg) {
+        DOFREE(mpMsg->payload);
+        DOFREE(mpMsg);
+    }
 }
 
 void CWsMsg::SetMsg(tagWsMsg* pMsg) {

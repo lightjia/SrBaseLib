@@ -8,7 +8,7 @@ enum WS_STATE{
 };
 
 #define  WS_MIN_MSG_EXPECT_LEN 6
-#define WS_KEEP_ALIVE_SEC   10
+#define WS_KEEP_ALIVE_SEC   1000
 
 enum WS_FRAMETYPE{
     WS_FRAME_EMPTY = 0xF0,
@@ -29,6 +29,7 @@ enum WS_FRAMETYPE{
 
 //protocol
 #define BLANK "blank"
+#define ECHO "echo"
 
 #pragma pack(1)
 struct tagWsMsgCache {
