@@ -64,16 +64,15 @@ int CWsInput::ParseMsg(len_str& lStr) {
 
         do {
             iRet = sWsMsgParse->DecodeMsg(&mstMsgCache, &mpMsg);
-            if (0 == iRet) {
+            if (0 == iRet && mpMsg && mpMsg->complete) {
                 CWsMsg* pWsMsg = new CWsMsg(mstrProtocol, mpCli);
                 pWsMsg->SetMsg(mpMsg);
                 sWsHandlerMgr->ProcMsg(pWsMsg);
                 mpMsg = NULL;
-            } else if (iRet == 1) {
-                iRet = 0;
-                break;
+            } else {
+                LOG_ERR("Cache Use :%d", mstMsgCache.iUse);
             }
-        } while (iRet == 0);
+        } while (iRet == 0 && mstMsgCache.iUse > 0);
     }
 
     return iRet;

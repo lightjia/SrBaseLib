@@ -46,13 +46,13 @@ int CWsCli::OnClose() {
 }
 
 int CWsCli::OnSend(int iStatus) {
-    LOG_INFO("CWsCli::OnSend:%d", iStatus);
     miActiveTime = time(NULL);
     return 0;
 }
 
 int CWsCli::OnInit() {
     mpInput = new CWsInput(this);
+    LOG_INFO("Recv Buff Size:%d", mstUvBuf.iLen);
     return 0;
 }
 

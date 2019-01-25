@@ -43,10 +43,23 @@ CWsHandler* CWsHandlerMgr::GetHandler(std::string& strProtocol) {
 int CWsHandlerMgr::ProcMsg(CWsMsg* pMsg) {
     ASSERT_RET_VALUE(pMsg && mbInit, 1);
     LOG_INFO("Enter CWsHandlerMgr::ProcMsg:%s", pMsg->GetProtocol().c_str());
+    if (pMsg->GetMsg()) {
+        LOG_INFO("Handler FrameType:%d", pMsg->GetMsg()->frameType);
+        if (pMsg->GetMsg()->frameType != WS_FRAME_TEXT && pMsg->GetMsg()->frameType != WS_FRAME_BINARY){
+            DODELETE(pMsg);
+            return 0;
+        }
+    }
+
     CWsHandler* pHandler = GetHandler(pMsg->GetProtocol());
     ASSERT_RET_VALUE(pHandler, 1);
 
-    pHandler->ProcMsg(pMsg);
+    len_str lResult = pHandler->ProcMsg(pMsg);
+    if (lResult.pStr && lResult.iLen > 0 && pMsg->GetCli()) {
+        pMsg->GetCli()->Send(lResult.pStr, lResult.iLen);
+    }
+
+    DOFREE(lResult.pStr);
     DODELETE(pMsg);
     return 0;
 }

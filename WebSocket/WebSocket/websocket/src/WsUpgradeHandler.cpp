@@ -48,9 +48,11 @@ CWsUpgradeHandler::CWsUpgradeHandler(){
 CWsUpgradeHandler::~CWsUpgradeHandler(){
 }
 
-int CWsUpgradeHandler::ProcMsg(CWsMsg* pMsg) {
+len_str CWsUpgradeHandler::ProcMsg(CWsMsg* pMsg) {
     LOG_INFO("Enter CWsUpgradeHandler::ProcMsg");
-    ASSERT_RET_VALUE(pMsg, 1);
+    len_str lRet;
+    memset(&lRet, 0, sizeof(lRet));
+    ASSERT_RET_VALUE(pMsg, lRet);
     std::istringstream stream(pMsg->GetHttpMsg().c_str());
     std::string header;
     std::string::size_type pos = 0;
@@ -70,7 +72,7 @@ int CWsUpgradeHandler::ProcMsg(CWsMsg* pMsg) {
         }
     }
 
-    ASSERT_RET_VALUE(!websocketKey.empty(), 1);
+    ASSERT_RET_VALUE(!websocketKey.empty(), lRet);
 
     // 填充http响应头信息 
 #define WS_UPGRADE_RESPONSE_LEN 600
@@ -81,7 +83,7 @@ int CWsUpgradeHandler::ProcMsg(CWsMsg* pMsg) {
     uint8_t pHash[SHA_DIGEST_LENGTH];
     SHA1((const unsigned char*)websocketKey.c_str(), strlen(websocketKey.c_str()), (unsigned char*)pHash);
     char* pEncode = Base64Encode((char*)pHash, (int)SHA_DIGEST_LENGTH);
-    ASSERT_RET_VALUE(pEncode, 1);
+    ASSERT_RET_VALUE(pEncode, lRet);
     iOffset += snprintf(szTmp + iOffset, WS_UPGRADE_RESPONSE_LEN - iOffset, "%s", pEncode);
     DOFREE(pEncode);
     if (!websocketProtocol.empty()){
@@ -91,13 +93,13 @@ int CWsUpgradeHandler::ProcMsg(CWsMsg* pMsg) {
     }
 
     iOffset += snprintf(szTmp + iOffset, WS_UPGRADE_RESPONSE_LEN - iOffset, "\r\n\r\n");
-    if (pMsg->GetCli()) {
-        pMsg->GetCli()->Send(szTmp, iOffset);
-        if (pMsg->GetCli()->GetInut()) {
-            pMsg->GetCli()->GetInut()->SetProtocol(websocketProtocol);
-            pMsg->GetCli()->GetInut()->SetState(WS_STATE_CONNECT);
-        }
+    lRet.pStr = (char*)do_malloc(iOffset*sizeof(char));
+    lRet.iLen = iOffset;
+    memcpy(lRet.pStr, szTmp, iOffset);
+    if (pMsg->GetCli() && pMsg->GetCli()->GetInut()) {
+        pMsg->GetCli()->GetInut()->SetProtocol(websocketProtocol);
+        pMsg->GetCli()->GetInut()->SetState(WS_STATE_CONNECT);
     }
 
-    return 0;
+    return lRet;
 }

@@ -7,7 +7,7 @@ public:
     ~CWsUpgradeHandler();
 
 public:
-    int ProcMsg(CWsMsg* pMsg);
+    len_str ProcMsg(CWsMsg* pMsg);
 };
 
 #endif

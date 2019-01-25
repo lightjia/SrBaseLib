@@ -3,14 +3,13 @@
 #include "WsMsg.h"
 #include "WsMsgParse.h"
 
-class CWsHandler
-{
+class CWsHandler{
 public:
     CWsHandler();
     virtual ~CWsHandler();
 
 public:
-    virtual int ProcMsg(CWsMsg* pMsg) = 0;
+    virtual len_str ProcMsg(CWsMsg* pMsg) = 0;
 };
 
 #endif

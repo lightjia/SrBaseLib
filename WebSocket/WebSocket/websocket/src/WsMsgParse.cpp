@@ -60,22 +60,21 @@ len_str CWsMsgParse::EncodeMsg(const char* pData, const size_t iLen, int iFrameT
 }
 
 int CWsMsgParse::DecodeMsg(tagWsMsgCache* pMsgCache, tagWsMsg** pWsMsg) {
-    ASSERT_RET_VALUE(pMsgCache && pWsMsg, 2);
+    ASSERT_RET_VALUE(pMsgCache && pWsMsg && pMsgCache->iUse > 0, 1);
     if (!(*pWsMsg)) {
         *pWsMsg = (tagWsMsg*)do_malloc(sizeof(tagWsMsg));
     }
 
     tagWsMsg* pTmpWsMsg = *pWsMsg;
     if (pTmpWsMsg->payloadLength == 0 && pMsgCache->iUse >= WS_MIN_MSG_EXPECT_LEN) {
-        // 检查扩展位并忽略  
-        ASSERT_RET_VALUE((pMsgCache->pData[0] & 0x40) == 0x0, 2);
         // fin位: 为1表示已接收完整报文, 为0表示继续监听后续报文  
         if ((pMsgCache->pData[0] & 0x80) != 0x80) {
-            return 1;
+            return 1;   //暂不支持长报文
         }
 
+        pTmpWsMsg->complete = 1;
         // mask位, 为1表示数据被加密  
-        ASSERT_RET_VALUE((pMsgCache->pData[1] & 0x80) == 0x80, 2);
+        ASSERT_RET_VALUE((pMsgCache->pData[1] & 0x80) == 0x80, 1);
 
         // 操作码  
         pTmpWsMsg->frameType = static_cast<uint8_t>(pMsgCache->pData[0] & 0x0f);
@@ -114,9 +113,6 @@ int CWsMsgParse::DecodeMsg(tagWsMsgCache* pMsgCache, tagWsMsg** pWsMsg) {
 
         memmove(pMsgCache->pData, pMsgCache->pData + iFrameLen, pMsgCache->iUse - iFrameLen);
         pMsgCache->iUse -= iFrameLen;
-    }
-    else {
-        return 1;
     }
 
     return 0;

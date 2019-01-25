@@ -8,7 +8,7 @@ public:
     ~CWsGetHandler();
 
 public:
-    int ProcMsg(CWsMsg* pMsg);
+    len_str ProcMsg(CWsMsg* pMsg);
 };
 
 #endif

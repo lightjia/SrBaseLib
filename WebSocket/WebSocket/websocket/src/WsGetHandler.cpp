@@ -6,11 +6,11 @@ CWsGetHandler::CWsGetHandler(){
 CWsGetHandler::~CWsGetHandler(){
 }
 
-int CWsGetHandler::ProcMsg(CWsMsg* pMsg) {
+len_str CWsGetHandler::ProcMsg(CWsMsg* pMsg) {
     LOG_INFO("Enter CWsGetHandler::ProcMsg");
-    ASSERT_RET_VALUE(pMsg, 1);
     len_str lHtml;
     memset(&lHtml, 0, sizeof(lHtml));
+    ASSERT_RET_VALUE(pMsg, lHtml);
 #define DEFAULT_HTTP "index.html"
     std::string strPwd = get_app_path();
     strPwd += DEFAULT_HTTP;
@@ -22,7 +22,7 @@ int CWsGetHandler::ProcMsg(CWsMsg* pMsg) {
         LOG_ERR("html:%s not exist", strPwd.c_str());
     }
 
-    ASSERT_RET_VALUE(lHtml.iLen > 0 && lHtml.pStr, 1);
+    ASSERT_RET_VALUE(lHtml.iLen > 0 && lHtml.pStr, lHtml);
     char szTmp[200];
     snprintf(szTmp, 200, "HTTP/1.1 200 OK\r\nContent-Type: html\r\nContent-Length: %d\r\n\r\n", (int)lHtml.iLen);
     ssize_t iDataLen = strlen(szTmp) + lHtml.iLen;
@@ -32,12 +32,9 @@ int CWsGetHandler::ProcMsg(CWsMsg* pMsg) {
     iOffset += strlen(szTmp);
     memcpy(pData + iOffset, lHtml.pStr, lHtml.iLen);
 
-    if (pMsg->GetCli()) {
-        pMsg->GetCli()->Send(pData, iDataLen);
-    }
-
     DOFREE(lHtml.pStr);
-    DOFREE(pData);
+    lHtml.pStr = pData;
+    lHtml.iLen = iDataLen;
 
-    return 0;
+    return lHtml;
 }
