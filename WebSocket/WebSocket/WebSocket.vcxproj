@@ -164,7 +164,6 @@
     <ClInclude Include="websocket\include\WsMsgParse.h" />
     <ClInclude Include="websocket\include\wsprotocol.h" />
     <ClInclude Include="websocket\include\WsServer.h" />
-    <ClInclude Include="websocket\include\WsState.h" />
     <ClInclude Include="websocket\include\WsUpgradeHandler.h" />
   </ItemGroup>
   <ItemGroup>
@@ -180,7 +179,6 @@
     <ClCompile Include="websocket\src\WsMsg.cpp" />
     <ClCompile Include="websocket\src\WsMsgParse.cpp" />
     <ClCompile Include="websocket\src\WsServer.cpp" />
-    <ClCompile Include="websocket\src\WsState.cpp" />
     <ClCompile Include="websocket\src\WsUpgradeHandler.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

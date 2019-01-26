@@ -39,9 +39,6 @@
     <ClInclude Include="websocket\include\WsServer.h">
       <Filter>websocket\include</Filter>
     </ClInclude>
-    <ClInclude Include="websocket\include\WsState.h">
-      <Filter>websocket\include</Filter>
-    </ClInclude>
     <ClInclude Include="websocket\include\WsMgr.h">
       <Filter>websocket\include</Filter>
     </ClInclude>
@@ -84,9 +81,6 @@
       <Filter>websocket\src</Filter>
     </ClCompile>
     <ClCompile Include="websocket\src\WsCli.cpp">
-      <Filter>websocket\src</Filter>
-    </ClCompile>
-    <ClCompile Include="websocket\src\WsState.cpp">
       <Filter>websocket\src</Filter>
     </ClCompile>
     <ClCompile Include="websocket\src\WsMgr.cpp">

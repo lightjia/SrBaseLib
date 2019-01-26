@@ -17,6 +17,14 @@ CWsInput::~CWsInput() {
     }
 
     DOFREE(mstMsgCache.pData);
+
+    mcQueMsgMutex.Lock();
+    while (!mqueMsg.empty()) {
+        len_str lstr = mqueMsg.front();
+        mqueMsg.pop();
+        DOFREE(lstr.pStr);
+    }
+    mcQueMsgMutex.UnLock();
 }
 
 int CWsInput::ParseMsg(len_str& lStr) {
