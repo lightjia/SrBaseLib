@@ -12,7 +12,7 @@ len_str CWsEchoHandler::ProcMsg(CWsMsg* pMsg) {
     memset(&lRet, 0, sizeof(lRet));
     ASSERT_RET_VALUE(pMsg, lRet);
     if (pMsg->GetCli() && pMsg->GetMsg()) {
-        LOG_INFO("Echo Recv :%s", pMsg->GetMsg()->payload);
+        LOG_INFO("Echo Recv MsgLen:%ld Msg:%s", pMsg->GetMsg()->payloadLength, pMsg->GetMsg()->payload);
         lRet = sWsMsgParse->EncodeMsg(pMsg->GetMsg()->payload, pMsg->GetMsg()->payloadLength, WS_FRAME_TEXT);
     } else {
         LOG_ERR("No Msg or No Cli");

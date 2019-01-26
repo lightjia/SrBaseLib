@@ -35,23 +35,18 @@ int CWsInput::ParseMsg(len_str& lStr) {
             sWsHandlerMgr->ProcMsg(pWsMsg);
             iRet = 0;
         }
-    }
-    else {
+    } else {
         ASSERT_RET_VALUE(!mstrProtocol.empty(), 1);
-
-        bool bFin = false;
         if (!mstMsgCache.pData) {
             mstMsgCache.pData = (char*)do_malloc(lStr.iLen * sizeof(char));
             memcpy(mstMsgCache.pData, lStr.pStr, lStr.iLen);
             mstMsgCache.iTotal = lStr.iLen;
             mstMsgCache.iUse = lStr.iLen;
-        }
-        else {
+        }  else {
             if (mstMsgCache.iTotal >= mstMsgCache.iUse + lStr.iLen) {
                 memcpy(mstMsgCache.pData + mstMsgCache.iUse, lStr.pStr, lStr.iLen);
                 mstMsgCache.iUse += lStr.iLen;
-            }
-            else {
+            } else {
                 char* psrcTmp = (char*)do_malloc((lStr.iLen + mstMsgCache.iUse) * sizeof(char));
                 memcpy(psrcTmp, mstMsgCache.pData, mstMsgCache.iUse);
                 memcpy(psrcTmp + mstMsgCache.iUse, lStr.pStr, lStr.iLen);
@@ -64,15 +59,13 @@ int CWsInput::ParseMsg(len_str& lStr) {
 
         do {
             iRet = sWsMsgParse->DecodeMsg(&mstMsgCache, &mpMsg);
-            if (0 == iRet && mpMsg && mpMsg->complete) {
+            if (mpMsg) {
                 CWsMsg* pWsMsg = new CWsMsg(mstrProtocol, mpCli);
                 pWsMsg->SetMsg(mpMsg);
                 sWsHandlerMgr->ProcMsg(pWsMsg);
                 mpMsg = NULL;
-            } else {
-                LOG_ERR("Cache Use :%d", mstMsgCache.iUse);
             }
-        } while (iRet == 0 && mstMsgCache.iUse > 0);
+        } while (iRet == 0 && mstMsgCache.iCurFrameLen + mstMsgCache.iCurFrameIndex < mstMsgCache.iUse);
     }
 
     return iRet;

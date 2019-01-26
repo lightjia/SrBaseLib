@@ -10,6 +10,9 @@ public:
 public:
     int DecodeMsg(tagWsMsgCache* pMsgCache, tagWsMsg** pWsMsg);
     len_str EncodeMsg(const char* pData, const size_t iLen, int iFrameType);
+
+private:
+    int TryDecodeLen(char* pData, uint8_t& frameType, uint8_t& payloadFieldExtraBytes, size_t& payloadLength);
 };
 
 #define sWsMsgParse CWsMsgParse::Instance()

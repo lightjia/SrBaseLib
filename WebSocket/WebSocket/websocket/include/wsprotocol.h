@@ -11,17 +11,14 @@ enum WS_STATE{
 
 #define  WS_MIN_MSG_EXPECT_LEN 6
 #define WS_KEEP_ALIVE_SEC   1000
-#define WS_RECV_BUFF_SIZE    65535
 
 enum WS_FRAMETYPE{
-    WS_FRAME_EMPTY = 0xF0,
-    WS_FRAME_ERROR = 0xF1,
+    WS_FRAME_CONTINUATION = 0x00,
     WS_FRAME_TEXT = 0x01,
     WS_FRAME_BINARY = 0x02,
+    WS_FRAME_CLOSING = 0x08,
     WS_FRAME_PING = 0x09,
     WS_FRAME_PONG = 0x0A,
-    WS_FRAME_OPENING = 0xF3,
-    WS_FRAME_CLOSING = 0x08
 };
 
 //FILEDS
@@ -39,14 +36,16 @@ struct tagWsMsgCache {
     char* pData;
     size_t iTotal;
     size_t iUse;
+    size_t iCurFrameIndex;
+    size_t iCurFrameLen;
+    size_t iTotalFrameLen;
+    int iComplete;
 };
 
 struct tagWsMsg {
     char* payload;
     size_t payloadLength;
-    uint8_t payloadFieldExtraBytes;
     uint8_t frameType;
-    int complete;
 };
 #pragma pack()
 #endif

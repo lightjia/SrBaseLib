@@ -36,7 +36,7 @@ int CWsServer::AddCli(uv_tcp_t* pUvTcp) {
     if (pCli) {
         pCli->SetUvLoop(GetUvLoop());
         pCli->SetTcpCli(pUvTcp);
-        pCli->Init(WS_RECV_BUFF_SIZE);
+        pCli->Init();
         REF(pCli);
         sUvTaskPool->PushTask((CTask*)pCli);
         mcvecClisMutex.Lock();

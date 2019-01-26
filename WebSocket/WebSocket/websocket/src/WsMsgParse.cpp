@@ -59,61 +59,96 @@ len_str CWsMsgParse::EncodeMsg(const char* pData, const size_t iLen, int iFrameT
     return lRet;
 }
 
+int CWsMsgParse::TryDecodeLen(char* pData, uint8_t& frameType, uint8_t& payloadFieldExtraBytes, size_t& payloadLength) {
+    payloadFieldExtraBytes = 0;
+    frameType = 0;
+    payloadLength = 0;
+    ASSERT_RET_VALUE(pData, 1);
+    // mask位, 为1表示数据被加密  
+    ASSERT_RET_VALUE((pData[1] & 0x80) == 0x80, 1);
+
+    // 操作码  
+    frameType = static_cast<uint8_t>(pData[0] & 0x0f);
+
+    // 处理utf-8编码的文本帧  
+    payloadLength = static_cast<uint16_t>(pData[1] & 0x7f);
+    if (payloadLength == 0x7e) {
+        payloadFieldExtraBytes = 2;
+        payloadLength = ntohs(*(uint16_t*)(&pData[2]));
+    } else if (payloadLength == 0x7f) {
+        // 数据过长
+        payloadLength = ntohl(*(u_long*)(&pData[2 + 4]));
+        payloadFieldExtraBytes = 8;
+    } 
+
+    ASSERT_RET_VALUE(payloadLength > 0, 1);
+    return 0;
+}
+
 int CWsMsgParse::DecodeMsg(tagWsMsgCache* pMsgCache, tagWsMsg** pWsMsg) {
     ASSERT_RET_VALUE(pMsgCache && pWsMsg && pMsgCache->iUse > 0, 1);
-    if (!(*pWsMsg)) {
-        *pWsMsg = (tagWsMsg*)do_malloc(sizeof(tagWsMsg));
+    if (pMsgCache->iCurFrameLen + pMsgCache->iCurFrameIndex > pMsgCache->iUse) {
+        return 0;
     }
 
-    tagWsMsg* pTmpWsMsg = *pWsMsg;
-    if (pTmpWsMsg->payloadLength == 0 && pMsgCache->iUse >= WS_MIN_MSG_EXPECT_LEN) {
+    uint8_t frameType = 0;
+    uint8_t payloadFieldExtraBytes = 0;
+    size_t payloadLength = 0;
+    while (pMsgCache->iUse >= WS_MIN_MSG_EXPECT_LEN + pMsgCache->iCurFrameIndex) {
         // fin位: 为1表示已接收完整报文, 为0表示继续监听后续报文  
-        if ((pMsgCache->pData[0] & 0x80) != 0x80) {
-            return 1;   //暂不支持长报文
+        bool bFin = true;
+        if ((pMsgCache->pData[pMsgCache->iCurFrameIndex] & 0x80) != 0x80) {
+            bFin = false;
         }
 
-        pTmpWsMsg->complete = 1;
-        // mask位, 为1表示数据被加密  
-        ASSERT_RET_VALUE((pMsgCache->pData[1] & 0x80) == 0x80, 1);
-
-        // 操作码  
-        pTmpWsMsg->frameType = static_cast<uint8_t>(pMsgCache->pData[0] & 0x0f);
-        // 处理utf-8编码的文本帧  
-        pTmpWsMsg->payloadLength = static_cast<uint16_t>(pMsgCache->pData[1] & 0x7f);
-        if (pTmpWsMsg->payloadLength == 0x7e) {
-            uint16_t payloadLength16b = 0;
-            pTmpWsMsg->payloadFieldExtraBytes = 2;
-            memcpy(&payloadLength16b, &pMsgCache->pData[2], pTmpWsMsg->payloadFieldExtraBytes);
-            pTmpWsMsg->payloadLength = ntohs(payloadLength16b);
-        }
-        else if (pTmpWsMsg->payloadLength == 0x7f) {
-            // 数据过长
-            pTmpWsMsg->payloadLength = ntohl(*(u_long*)(&pMsgCache->pData[2]));
-            pTmpWsMsg->payloadFieldExtraBytes = 8;
+        ASSERT_RET_VALUE(!TryDecodeLen(pMsgCache->pData + pMsgCache->iCurFrameIndex, frameType, payloadFieldExtraBytes, payloadLength), 1);
+        pMsgCache->iCurFrameLen = payloadFieldExtraBytes + WS_MIN_MSG_EXPECT_LEN + payloadLength;
+        if (pMsgCache->iCurFrameLen + pMsgCache->iCurFrameIndex <= pMsgCache->iUse) {
+            pMsgCache->iTotalFrameLen += payloadLength;
+            pMsgCache->iCurFrameIndex += pMsgCache->iCurFrameLen;
+            if (bFin) {
+                pMsgCache->iComplete = 1;
+                break;
+            }
+        } else {
+            break;
         }
     }
 
-    size_t iFrameLen = pTmpWsMsg->payloadFieldExtraBytes + WS_MIN_MSG_EXPECT_LEN + pTmpWsMsg->payloadLength;
-    if (pMsgCache->iUse >= iFrameLen) {
-        // header: 2字节, masking key: 4字节  
-        const char *maskingKey = &pMsgCache->pData[2 + pTmpWsMsg->payloadFieldExtraBytes];
-        pTmpWsMsg->payload = (char*)do_malloc((pTmpWsMsg->payloadLength + 1)*sizeof(char));
-        memcpy(pTmpWsMsg->payload, &pMsgCache->pData[2 + pTmpWsMsg->payloadFieldExtraBytes + 4], pTmpWsMsg->payloadLength);
-        for (int i = 0; i < pTmpWsMsg->payloadLength; i++) {
-            pTmpWsMsg->payload[i] = pTmpWsMsg->payload[i] ^ maskingKey[i % 4];
+    if (pMsgCache->iComplete) {
+        size_t iOffset = 0;
+        size_t iPayloadOffset = 0;
+        while (pMsgCache->iCurFrameIndex > iOffset) {
+            if (!(*pWsMsg)) {
+                *pWsMsg = (tagWsMsg*)do_malloc(sizeof(tagWsMsg));
+                (*pWsMsg)->payload = (char*)do_malloc((pMsgCache->iTotalFrameLen + 1)*sizeof(char));
+                (*pWsMsg)->payload[pMsgCache->iTotalFrameLen] = '\0';
+            }
+
+            tagWsMsg* pTmpWsMsg = *pWsMsg;
+            ASSERT_RET_VALUE(!TryDecodeLen(pMsgCache->pData + iOffset, frameType, payloadFieldExtraBytes, payloadLength), 1);
+            if (!pTmpWsMsg->frameType) {
+                pTmpWsMsg->frameType = frameType;
+            }
+
+            ASSERT_RET_VALUE(pTmpWsMsg->frameType == frameType || frameType == WS_FRAME_CONTINUATION, 1);
+            // header: 2字节, masking key: 4字节  
+            const char *maskingKey = &pMsgCache->pData[iOffset + 2 + payloadFieldExtraBytes];
+            memcpy(pTmpWsMsg->payload + iPayloadOffset, &pMsgCache->pData[iOffset + 2 + payloadFieldExtraBytes + 4], payloadLength);
+            for (int i = 0; i < payloadLength; i++) {
+                pTmpWsMsg->payload[iPayloadOffset + i] = pTmpWsMsg->payload[iPayloadOffset + i] ^ maskingKey[(iPayloadOffset + i) % 4];
+            }
+
+            iOffset += payloadFieldExtraBytes + WS_MIN_MSG_EXPECT_LEN + payloadLength;
+            iPayloadOffset += payloadLength;
+            pTmpWsMsg->payloadLength += payloadLength;
         }
-        pTmpWsMsg->payload[pTmpWsMsg->payloadLength] = '\0';
 
-
-        if (pMsgCache->iUse == iFrameLen) {
-            pMsgCache->iUse = 0;
-            return 0;
-        }
-
-
-        memmove(pMsgCache->pData, pMsgCache->pData + iFrameLen, pMsgCache->iUse - iFrameLen);
-        pMsgCache->iUse -= iFrameLen;
+        pMsgCache->iComplete = 0;
+        pMsgCache->iCurFrameIndex -= iOffset;
+        pMsgCache->iUse -= iOffset;
+        pMsgCache->iTotalFrameLen -= iPayloadOffset;
     }
-
+   
     return 0;
 }
