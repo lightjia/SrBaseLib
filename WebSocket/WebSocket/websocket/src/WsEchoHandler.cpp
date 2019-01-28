@@ -9,7 +9,7 @@ CWsEchoHandler::~CWsEchoHandler(){
 len_str CWsEchoHandler::ProcMsg(CWsMsg* pMsg) {
     LOG_INFO("Enter CWsEchoHandler::ProcMsg");
     len_str lRet;
-    memset(&lRet, 0, sizeof(lRet));
+    BZERO(lRet);
     ASSERT_RET_VALUE(pMsg, lRet);
     if (pMsg->GetCli() && pMsg->GetMsg()) {
         LOG_INFO("Echo Recv MsgLen:%ld Msg:%s", pMsg->GetMsg()->payloadLength, pMsg->GetMsg()->payload);

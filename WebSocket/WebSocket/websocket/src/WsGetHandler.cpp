@@ -9,7 +9,7 @@ CWsGetHandler::~CWsGetHandler(){
 len_str CWsGetHandler::ProcMsg(CWsMsg* pMsg) {
     LOG_INFO("Enter CWsGetHandler::ProcMsg");
     len_str lHtml;
-    memset(&lHtml, 0, sizeof(lHtml));
+    BZERO(lHtml);
     ASSERT_RET_VALUE(pMsg, lHtml);
 #define DEFAULT_HTTP "index.html"
     std::string strPwd = get_app_path();

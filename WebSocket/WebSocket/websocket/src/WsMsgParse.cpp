@@ -8,7 +8,7 @@ CWsMsgParse::~CWsMsgParse(){
 
 len_str CWsMsgParse::EncodeMsg(const char* pData, const size_t iLen, int iFrameType) {
     len_str lRet;
-    memset(&lRet, 0, sizeof(lRet));
+    BZERO(lRet);
     ASSERT_RET_VALUE(pData && iLen > 0, lRet);
     uint8_t payloadFieldExtraBytes = 0;
     if (iLen <= 125){

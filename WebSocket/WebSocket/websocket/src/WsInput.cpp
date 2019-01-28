@@ -7,7 +7,7 @@ CWsInput::CWsInput(CWsCli* pCli) {
     miState = WS_STATE_NONE;
     mpCli = pCli;
     mpMsg = NULL;
-    memset(&mstMsgCache, 0, sizeof(mstMsgCache));
+    BZERO(mstMsgCache);
 }
 
 CWsInput::~CWsInput() {
@@ -83,7 +83,7 @@ int CWsInput::ProcMsg() {
     LOG_INFO("Enter CWsInput::ProcMsg");
     for (;;) {
         len_str lstr;
-        memset(&lstr, 0, sizeof(lstr));
+        BZERO(lstr);
         mcQueMsgMutex.Lock();
         if (!mqueMsg.empty()) {
             lstr = mqueMsg.front();
