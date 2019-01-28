@@ -82,6 +82,10 @@ int CWsInput::ParseMsg(len_str& lStr) {
 int CWsInput::ProcMsg() {
     LOG_INFO("Enter CWsInput::ProcMsg");
     for (;;) {
+        if (mpCli && mpCli->IsClosed()) {
+            break;
+        }
+
         len_str lstr;
         BZERO(lstr);
         mcQueMsgMutex.Lock();

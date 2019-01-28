@@ -51,7 +51,7 @@ len_str CWsUpgradeHandler::ProcMsg(CWsMsg* pMsg) {
     if (!websocketProtocol.empty()){
         iOffset += snprintf(szTmp + iOffset, WS_UPGRADE_RESPONSE_LEN - iOffset, "\r\nSec-WebSocket-Protocol: %s", websocketProtocol.c_str());
     } else {
-        websocketProtocol = BLANK;
+        websocketProtocol = WS_PROTOCOL_BLANK;
     }
 
     iOffset += snprintf(szTmp + iOffset, WS_UPGRADE_RESPONSE_LEN - iOffset, "\r\n\r\n");

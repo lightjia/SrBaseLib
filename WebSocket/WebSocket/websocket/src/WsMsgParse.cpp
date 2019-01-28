@@ -87,6 +87,7 @@ int CWsMsgParse::TryDecodeLen(char* pData, uint8_t& frameType, uint8_t& payloadF
 
 int CWsMsgParse::DecodeMsg(tagWsMsgCache* pMsgCache, tagWsMsg** pWsMsg) {
     ASSERT_RET_VALUE(pMsgCache && pWsMsg && pMsgCache->iUse > 0, 1);
+    LOG_INFO("Enter CWsMsgParse::DecodeMsg iCurFrameLen:%d iCurFrameIndex:%d iUse:%d", pMsgCache->iCurFrameLen, pMsgCache->iCurFrameIndex, pMsgCache->iUse);
     if (pMsgCache->iCurFrameLen + pMsgCache->iCurFrameIndex > pMsgCache->iUse) {
         return 0;
     }
@@ -116,6 +117,7 @@ int CWsMsgParse::DecodeMsg(tagWsMsgCache* pMsgCache, tagWsMsg** pWsMsg) {
     }
 
     if (pMsgCache->iComplete) {
+        LOG_INFO("Recv An Frame");
         size_t iOffset = 0;
         size_t iPayloadOffset = 0;
         while (pMsgCache->iCurFrameIndex > iOffset) {
@@ -148,7 +150,9 @@ int CWsMsgParse::DecodeMsg(tagWsMsgCache* pMsgCache, tagWsMsg** pWsMsg) {
         pMsgCache->iCurFrameIndex -= iOffset;
         pMsgCache->iUse -= iOffset;
         pMsgCache->iTotalFrameLen -= iPayloadOffset;
+        pMsgCache->iCurFrameLen = 0;
     }
    
+    LOG_INFO("Leave CWsMsgParse::DecodeMsg iCurFrameLen:%d iCurFrameIndex:%d iUse:%d", pMsgCache->iCurFrameLen, pMsgCache->iCurFrameIndex, pMsgCache->iUse);
     return 0;
 }

@@ -103,12 +103,12 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <AdditionalIncludeDirectories>../third/svrbase/base/include;../third/svrbase/cfg/include;../third/svrbase/openssl/include;../third/svrbase/libuv/include;../third/openssl/include;../third/libuv/win/include;websocket/include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../third/svrbase/base/include;../third/svrbase/cfg/include;../third/svrbase/openssl/include;../third/svrbase/libuv/include;../third/openssl/win/include;../third/libuv/win/include;websocket/include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>ws2_32.lib;IPHLPAPI.lib;Psapi.lib;Userenv.lib;../third/svrbase/SvrBase.lib;../third/libuv/win/lib/libuv.lib;../third/openssl/lib/libeay32.lib;../third/openssl/lib/ssleay32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ws2_32.lib;IPHLPAPI.lib;Psapi.lib;Userenv.lib;../third/svrbase/lib/win/SvrBase.lib;../third/libuv/win/lib/libuv.lib;../third/openssl/win/lib/libeay32.lib;../third/openssl/win/lib/ssleay32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

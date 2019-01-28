@@ -28,8 +28,8 @@ enum WS_FRAMETYPE{
 #define WEBSOCKETPINGPONG	"PINGPONG"
 
 //protocol
-#define BLANK "blank"
-#define ECHO "echo"
+#define WS_PROTOCOL_BLANK "blank"
+#define WS_PROTOCOL_ECHO "echo"
 
 #pragma pack(1)
 struct tagWsMsgCache {

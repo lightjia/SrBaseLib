@@ -16,7 +16,7 @@ int CWsHandlerMgr::Init() {
         ASSERT_RET_VALUE(pair_handler.second, 1);
         pair_handler = mmapHandlers.insert(std::make_pair(WEBSOCKETKEY, new CWsUpgradeHandler()));
         ASSERT_RET_VALUE(pair_handler.second, 1);
-        pair_handler = mmapHandlers.insert(std::make_pair(ECHO, new CWsEchoHandler()));
+        pair_handler = mmapHandlers.insert(std::make_pair(WS_PROTOCOL_ECHO, new CWsEchoHandler()));
         ASSERT_RET_VALUE(pair_handler.second, 1);
         mbInit = true;
     }

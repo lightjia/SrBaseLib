@@ -61,10 +61,12 @@ int CWsCli::TaskInit() {
 }
 
 int CWsCli::TaskExcute() {
+    LOG_INFO("Enter CWsCli::TaskExcute");
     if (!mcInputMutex.TryLock() && mpInput) {
         mpInput->ProcMsg();
         mcInputMutex.UnLock();
     }
+    LOG_INFO("Leave CWsCli::TaskExcute");
     return 0;
 }
 
