@@ -12,7 +12,7 @@ public:
     len_str EncodeMsg(const char* pData, const size_t iLen, int iFrameType);
 
 private:
-    int TryDecodeLen(char* pData, uint8_t& frameType, uint8_t& payloadFieldExtraBytes, size_t& payloadLength);
+    int TryDecodeLen(char* pData, tagWsMsgFrame& stFrame);
 };
 
 #define sWsMsgParse CWsMsgParse::Instance()

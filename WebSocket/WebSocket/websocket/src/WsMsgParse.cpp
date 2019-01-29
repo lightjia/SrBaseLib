@@ -10,78 +10,79 @@ len_str CWsMsgParse::EncodeMsg(const char* pData, const size_t iLen, int iFrameT
     len_str lRet;
     BZERO(lRet);
     ASSERT_RET_VALUE(pData && iLen > 0, lRet);
-    uint8_t payloadFieldExtraBytes = 0;
+    size_t frameSize = iLen;
+
+    //flags byte.
+    frameSize += 1; 
+
+    // Add the size bytes:
     if (iLen <= 125){
-        payloadFieldExtraBytes = 0;
+        frameSize += 1;
     } else if (iLen > 125 && iLen <= 65535){
-        payloadFieldExtraBytes = 2;
+        frameSize += 3;
     } else {
-        payloadFieldExtraBytes = 8;
+        frameSize += 9;
     }
 
-    // header: 2字节, mask位设置为0(不加密), 则后面的masking key无须填写, 省略4字节  
-    uint8_t frameHeaderSize = 2 + payloadFieldExtraBytes;
-    uint8_t* pFrameHead = (uint8_t*)do_malloc(frameHeaderSize * sizeof(uint8_t));
-    memset(pFrameHead, 0, frameHeaderSize);
+    lRet.pStr = (char*)do_malloc((frameSize)*sizeof(char));
+    lRet.iLen = frameSize;
+
     // fin位为1, 扩展位为0, 操作位为frameType  
-    pFrameHead[0] = static_cast<uint8_t>(0x80 | iFrameType);
+    lRet.pStr[0] = 0x80 | iFrameType;
 
     // 填充数据长度  
     if (iLen <= 125){
-        pFrameHead[1] = static_cast<uint8_t>(iLen);
+        lRet.pStr[1] = (char)(iLen);
     } else if (iLen > 125 && iLen <= 65535){
-        pFrameHead[1] = 0x7e;
-        uint16_t len = htons((uint16_t)iLen);
-        memcpy(&pFrameHead[2], &len, payloadFieldExtraBytes);
+        lRet.pStr[1] = 0x7e;
+
+        u_short uNetLen = htons((u_short)iLen);
+        memcpy(&lRet.pStr[2], &uNetLen, sizeof(uNetLen));
     } else{
-        pFrameHead[1] = 0x7f;
-        char len[8];
-        len[0] = (iLen >> 56) & 255;
-        len[1] = (iLen >> 48) & 255;
-        len[2] = (iLen >> 40) & 255;
-        len[3] = (iLen >> 32) & 255;
-        len[4] = (iLen >> 24) & 255;
-        len[5] = (iLen >> 16) & 255;
-        len[6] = (iLen >> 8) & 255;
-        len[7] = (iLen)& 255;
-        memcpy(&pFrameHead[2], len, payloadFieldExtraBytes);
+        lRet.pStr[1] = 0x7f;
+        u_long lNetLen = htonl((u_long)iLen);
+        memcpy(&lRet.pStr[2], &lNetLen, sizeof(lNetLen));
     }
 
     // 填充数据  
-    size_t frameSize = frameHeaderSize + iLen;
-    lRet.pStr = (char*)do_malloc((frameSize)*sizeof(char));
-    lRet.iLen = frameSize;
-    memcpy(lRet.pStr, pFrameHead, frameHeaderSize);
-    memcpy(lRet.pStr + frameHeaderSize, pData, iLen);
-
-    DOFREE(pFrameHead);
+    int iOffset = (int)(frameSize - iLen);
+    memcpy(lRet.pStr + iOffset, pData, iLen);
 
     return lRet;
 }
 
-int CWsMsgParse::TryDecodeLen(char* pData, uint8_t& frameType, uint8_t& payloadFieldExtraBytes, size_t& payloadLength) {
-    payloadFieldExtraBytes = 0;
-    frameType = 0;
-    payloadLength = 0;
+int CWsMsgParse::TryDecodeLen(char* pData, tagWsMsgFrame& stFrame) {
+    BZERO(stFrame);
+    stFrame.expectsize = WS_MIN_MSG_EXPECT_LEN;
     ASSERT_RET_VALUE(pData, 1);
-    // mask位, 为1表示数据被加密  
-    ASSERT_RET_VALUE((pData[1] & 0x80) == 0x80, 1);
-
     // 操作码  
-    frameType = static_cast<uint8_t>(pData[0] & 0x0f);
+    stFrame.frameType = static_cast<uint8_t>(pData[0] & 0x0f);
 
     // 处理utf-8编码的文本帧  
-    payloadLength = static_cast<uint16_t>(pData[1] & 0x7f);
-    if (payloadLength == 0x7e) {
-        payloadFieldExtraBytes = 2;
-        payloadLength = ntohs(*(uint16_t*)(&pData[2]));
-    } else if (payloadLength == 0x7f) {
-        // 数据过长
-        payloadLength = ntohl(*(u_long*)(&pData[2 + 4]));
-        payloadFieldExtraBytes = 8;
+    stFrame.payloadLength = static_cast<uint16_t>(pData[1] & 0x7f);
+    stFrame.payloadOffset = 2;
+
+    if (stFrame.payloadLength == 0x7e) {
+        //Add 2 bytes for size:
+        stFrame.expectsize += 2;
+        stFrame.payloadOffset = 4;
+        stFrame.payloadLength = ntohs(*(uint16_t*)(&pData[2]));
+    } else if (stFrame.payloadLength == 0x7f) {
+        // Add 8 bytes for size
+        stFrame.expectsize += 8;
+        stFrame.payloadLength = ntohl(*(u_long*)(&pData[2 + 4]));
+        stFrame.payloadOffset = 10;
     } 
 
-    ASSERT_RET_VALUE(payloadLength > 0, 1);
+    ASSERT_RET_VALUE(stFrame.payloadLength > 0, 1);
+    stFrame.expectsize += stFrame.payloadLength;
+
+    // mask位, 为1表示数据被加密  
+    if (pData[1] & 0x80) {
+        stFrame.mask = 1;
+        stFrame.payloadOffset += 4;
+        stFrame.expectsize += 4;
+    }
     return 0;
 }
 
@@ -92,9 +93,6 @@ int CWsMsgParse::DecodeMsg(tagWsMsgCache* pMsgCache, tagWsMsg** pWsMsg) {
         return 0;
     }
 
-    uint8_t frameType = 0;
-    uint8_t payloadFieldExtraBytes = 0;
-    size_t payloadLength = 0;
     while (pMsgCache->iUse >= WS_MIN_MSG_EXPECT_LEN + pMsgCache->iCurFrameIndex) {
         // fin位: 为1表示已接收完整报文, 为0表示继续监听后续报文  
         bool bFin = true;
@@ -102,10 +100,11 @@ int CWsMsgParse::DecodeMsg(tagWsMsgCache* pMsgCache, tagWsMsg** pWsMsg) {
             bFin = false;
         }
 
-        ASSERT_RET_VALUE(!TryDecodeLen(pMsgCache->pData + pMsgCache->iCurFrameIndex, frameType, payloadFieldExtraBytes, payloadLength), 1);
-        pMsgCache->iCurFrameLen = payloadFieldExtraBytes + WS_MIN_MSG_EXPECT_LEN + payloadLength;
+        tagWsMsgFrame stFrame;
+        ASSERT_RET_VALUE(!TryDecodeLen(pMsgCache->pData + pMsgCache->iCurFrameIndex, stFrame), 1);
+        pMsgCache->iCurFrameLen = stFrame.expectsize;
         if (pMsgCache->iCurFrameLen + pMsgCache->iCurFrameIndex <= pMsgCache->iUse) {
-            pMsgCache->iTotalFrameLen += payloadLength;
+            pMsgCache->iTotalFrameLen += stFrame.payloadLength;
             pMsgCache->iCurFrameIndex += pMsgCache->iCurFrameLen;
             if (bFin) {
                 pMsgCache->iComplete = 1;
@@ -128,24 +127,28 @@ int CWsMsgParse::DecodeMsg(tagWsMsgCache* pMsgCache, tagWsMsg** pWsMsg) {
             }
 
             tagWsMsg* pTmpWsMsg = *pWsMsg;
-            ASSERT_RET_VALUE(!TryDecodeLen(pMsgCache->pData + iOffset, frameType, payloadFieldExtraBytes, payloadLength), 1);
+            tagWsMsgFrame stFrame;
+            ASSERT_RET_VALUE(!TryDecodeLen(pMsgCache->pData + iOffset, stFrame), 1);
             if (!pTmpWsMsg->frameType) {
-                pTmpWsMsg->frameType = frameType;
+                pTmpWsMsg->frameType = stFrame.frameType;
             }
 
-            ASSERT_RET_VALUE(pTmpWsMsg->frameType == frameType || frameType == WS_FRAME_CONTINUATION, 1);
-            // header: 2字节, masking key: 4字节  
-            const char *maskingKey = &pMsgCache->pData[iOffset + 2 + payloadFieldExtraBytes];
-            memcpy(pTmpWsMsg->payload + iPayloadOffset, &pMsgCache->pData[iOffset + 2 + payloadFieldExtraBytes + 4], payloadLength);
-            for (int i = 0; i < payloadLength; i++) {
-                pTmpWsMsg->payload[iPayloadOffset + i] = pTmpWsMsg->payload[iPayloadOffset + i] ^ maskingKey[(iPayloadOffset + i) % 4];
+            ASSERT_RET_VALUE(pTmpWsMsg->frameType == stFrame.frameType || stFrame.frameType == WS_FRAME_CONTINUATION, 1);
+            memcpy(pTmpWsMsg->payload + iPayloadOffset, &pMsgCache->pData[iOffset + stFrame.payloadOffset], stFrame.payloadLength);
+            if (stFrame.mask && stFrame.payloadOffset > 4) {
+                // header: 2字节, masking key: 4字节  
+                const char *maskingKey = &pMsgCache->pData[stFrame.payloadOffset - 4];
+                for (int i = 0; i < stFrame.payloadLength; i++) {
+                    pTmpWsMsg->payload[iPayloadOffset + i] = pTmpWsMsg->payload[iPayloadOffset + i] ^ maskingKey[i % 4];
+                }
             }
 
-            iOffset += payloadFieldExtraBytes + WS_MIN_MSG_EXPECT_LEN + payloadLength;
-            iPayloadOffset += payloadLength;
-            pTmpWsMsg->payloadLength += payloadLength;
+            iOffset += stFrame.expectsize;
+            iPayloadOffset += stFrame.payloadLength;
+            pTmpWsMsg->payloadLength += stFrame.payloadLength;
         }
 
+        ASSERT_RET_VALUE(*pWsMsg && (*pWsMsg)->payloadLength == pMsgCache->iTotalFrameLen, 1);
         pMsgCache->iComplete = 0;
         pMsgCache->iCurFrameIndex -= iOffset;
         pMsgCache->iUse -= iOffset;

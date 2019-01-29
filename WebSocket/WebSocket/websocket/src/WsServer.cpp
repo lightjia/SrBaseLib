@@ -14,6 +14,7 @@ int CWsServer::OnInit() {
 
 void CWsServer::OnBaseTimer() {
     CWsCli* pCli = NULL;
+    //LOG_INFO("Enter CWsServer::OnBaseTimer");
     mcvecClisMutex.Lock();
     std::vector<CWsCli*>::iterator iter = mvecClis.begin();
     while (iter != mvecClis.end()) {
@@ -38,6 +39,7 @@ int CWsServer::AddCli(uv_tcp_t* pUvTcp) {
         pCli->SetTcpCli(pUvTcp);
         pCli->Init();
         REF(pCli);
+        LOG_INFO("CWsServer::AddCli IP:%s Port:%d", pCli->GetIp().c_str(), pCli->GetPort());
         sUvTaskPool->PushTask((CTask*)pCli);
         mcvecClisMutex.Lock();
         mvecClis.push_back(pCli);

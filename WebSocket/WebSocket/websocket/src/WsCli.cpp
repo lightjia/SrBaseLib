@@ -46,7 +46,11 @@ int CWsCli::OnClose() {
 }
 
 int CWsCli::OnSend(int iStatus) {
-    miActiveTime = time(NULL);
+    LOG_INFO("Enter CWsCli::OnSend:%d", iStatus);
+    if (!iStatus) {
+        miActiveTime = time(NULL);
+    }
+   
     return 0;
 }
 

@@ -28,6 +28,7 @@ CWsInput::~CWsInput() {
 }
 
 int CWsInput::ParseMsg(len_str& lStr) {
+    LOG_INFO("Enter CWsInput::ParseMsg");
     int iRet = 1;
     ASSERT_RET_VALUE(lStr.iLen > 0 && lStr.pStr, 1);
     if (WS_STATE_NONE == miState) {
@@ -66,6 +67,10 @@ int CWsInput::ParseMsg(len_str& lStr) {
         }
 
         do {
+            if (mpCli && mpCli->IsClosed()) {
+                break;
+            }
+
             iRet = sWsMsgParse->DecodeMsg(&mstMsgCache, &mpMsg);
             if (mpMsg) {
                 CWsMsg* pWsMsg = new CWsMsg(mstrProtocol, mpCli);
@@ -73,14 +78,17 @@ int CWsInput::ParseMsg(len_str& lStr) {
                 sWsHandlerMgr->ProcMsg(pWsMsg);
                 mpMsg = NULL;
             }
-        } while (iRet == 0 && mstMsgCache.iCurFrameLen + mstMsgCache.iCurFrameIndex < mstMsgCache.iUse);
+        } while (iRet == 0 && mstMsgCache.iUse >= WS_MIN_MSG_EXPECT_LEN && mstMsgCache.iCurFrameLen + mstMsgCache.iCurFrameIndex < mstMsgCache.iUse);
     }
 
+    LOG_INFO("Leave CWsInput::ParseMsg");
     return iRet;
 }
 
 int CWsInput::ProcMsg() {
     LOG_INFO("Enter CWsInput::ProcMsg");
+    int iTryTime = 0;
+#define MAX_TRY_GET_MSG_NUM 3
     for (;;) {
         if (mpCli && mpCli->IsClosed()) {
             break;
@@ -89,14 +97,20 @@ int CWsInput::ProcMsg() {
         len_str lstr;
         BZERO(lstr);
         mcQueMsgMutex.Lock();
+        LOG_INFO("mqueMsg size:%d", (int)mqueMsg.size());
         if (!mqueMsg.empty()) {
             lstr = mqueMsg.front();
             mqueMsg.pop();
+            iTryTime = 0;
         }
         mcQueMsgMutex.UnLock();
 
         if (lstr.iLen <= 0 || !lstr.pStr) {
-            break;
+            if (++iTryTime >= MAX_TRY_GET_MSG_NUM) {
+                break;
+            }
+
+            continue;
         }
 
         if (ParseMsg(lstr)) {

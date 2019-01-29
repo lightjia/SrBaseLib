@@ -9,7 +9,7 @@ enum WS_STATE{
     WS_STATE_UNCONNECT,
 };
 
-#define  WS_MIN_MSG_EXPECT_LEN 6
+#define  WS_MIN_MSG_EXPECT_LEN 2
 #define WS_KEEP_ALIVE_SEC   1000
 
 enum WS_FRAMETYPE{
@@ -32,6 +32,14 @@ enum WS_FRAMETYPE{
 #define WS_PROTOCOL_ECHO "echo"
 
 #pragma pack(1)
+struct tagWsMsgFrame{
+    uint8_t frameType;
+    uint8_t payloadOffset;
+    uint8_t mask;
+    size_t payloadLength;
+    size_t expectsize;
+};
+
 struct tagWsMsgCache {
     char* pData;
     size_t iTotal;
