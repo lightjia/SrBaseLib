@@ -2,7 +2,7 @@
 #define __CWSINPUT__H_
 #include "UvMutex.h"
 #include "wsprotocol.h"
-#include "CLogmanager.h"
+#include "Log.h"
 #include <queue>
 
 class CWsCli;
@@ -18,12 +18,12 @@ public:
     void SetState(WS_STATE iState) { miState = iState; }
 
 private:
-    int ParseMsg(len_str& lStr);
+    int ParseMsg();
 
 private:
     WS_STATE miState;
-    std::queue<len_str> mqueMsg;
-    CUvMutex mcQueMsgMutex;
+	CMemBuffer* mpRecvBuffer;
+    CUvMutex mcRecvBufferMutex;
     std::string mstrProtocol;
     CWsCli* mpCli;
     tagWsMsg* mpMsg;

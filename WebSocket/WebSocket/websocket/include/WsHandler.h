@@ -9,7 +9,7 @@ public:
     virtual ~CWsHandler();
 
 public:
-    virtual len_str ProcMsg(CWsMsg* pMsg) = 0;
+    virtual CMemBuffer* ProcMsg(CWsMsg* pMsg) = 0;
 };
 
 #endif

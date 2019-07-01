@@ -4,6 +4,7 @@
 #include <queue>
 #include <map>
 #include <vector>
+
 class CUvTcpCli : public CUvNetBase{
 public:
     CUvTcpCli();
@@ -21,12 +22,18 @@ public:
     int Connect(std::string strIp, unsigned short sPort);
     int Send(char* pData, ssize_t iLen);
     int Close();
+	uint64_t GetTotalSendBytes() { return miTotalSendBytes; }
+	uint64_t GetTotalRecvBytes() { return miTotalRecvBytes; }
+	uint64_t GetNeedSendBytes() { return miNeedSendBytes; }
 
 private:
     void ParseIpPort();
     int AfterConn();
-    int Recv();
+    int StartRecv();
     int DoSend();
+	void DoConn(int iStatus);
+	void DoRecv(ssize_t nRead, const uv_buf_t* pBuf);
+	void AfterSend(uv_write_t* pReq, int iStatus);
     void CleanSendQueue();
 
 protected:
@@ -40,9 +47,12 @@ protected:
     uv_connect_t* mpUvConn;
 
 private:
+	int miTcpCliState;
+	uint64_t miTotalRecvBytes;
+	uint64_t miTotalSendBytes;
+	uint64_t miNeedSendBytes;
     uv_async_t mstUvSendAsync;
-    CUvMutex mcSendAsyncMutex;
-    std::queue<uv_buf_t> mqueSendBuf;
+	CMemBuffer* mpSendBuf;
     CUvMutex mcSendMutex;
     std::map<uv_write_t*, tagUvBufArray> mmapSend;
 };

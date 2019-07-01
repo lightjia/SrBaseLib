@@ -7,134 +7,72 @@ CWsInput::CWsInput(CWsCli* pCli) {
     miState = WS_STATE_NONE;
     mpCli = pCli;
     mpMsg = NULL;
-    BZERO(mstMsgCache);
+	mpRecvBuffer = new CMemBuffer();
+	mstMsgCache.pBuffer = new CMemBuffer();
 }
 
 CWsInput::~CWsInput() {
     if (mpMsg) {
-        DOFREE(mpMsg->payload);
-        DOFREE(mpMsg);
+		DODELETE(mpMsg->pBuffer);
+        DODELETE(mpMsg);
     }
 
-    DOFREE(mstMsgCache.pData);
-
-    mcQueMsgMutex.Lock();
-    while (!mqueMsg.empty()) {
-        len_str lstr = mqueMsg.front();
-        mqueMsg.pop();
-        DOFREE(lstr.pStr);
-    }
-    mcQueMsgMutex.UnLock();
+    DODELETE(mstMsgCache.pBuffer);
+    mcRecvBufferMutex.Lock();
+	DODELETE(mpRecvBuffer);
+	mcRecvBufferMutex.UnLock();
 }
 
-int CWsInput::ParseMsg(len_str& lStr) {
-    LOG_INFO("Enter CWsInput::ParseMsg");
-    int iRet = 1;
-    ASSERT_RET_VALUE(lStr.iLen > 0 && lStr.pStr, 1);
+int CWsInput::ParseMsg() {
+	if (mstMsgCache.pBuffer->GetBuffLen() <= 0) {
+		return 0;
+	}
+
+	LOG_INFO("Enter CWsInput::ParseMsg:%I64u", mstMsgCache.pBuffer->GetBuffLen());
     if (WS_STATE_NONE == miState) {
-        if (str_start_with(lStr.pStr, GET)) {
+		mstMsgCache.pBuffer->AppendNul();
+		char* pMsg = (char*)mstMsgCache.pBuffer->GetBuffer();
+        if (str_start_with(pMsg, GET)) {
             mstrProtocol = GET;
-            if (strstr(lStr.pStr, WEBSOCKETKEY)) {
+            if (strstr(pMsg, WEBSOCKETKEY)) {
                 mstrProtocol = WEBSOCKETKEY;
             }
 
             CWsMsg* pWsMsg = new CWsMsg(mstrProtocol, mpCli);
-            std::string strHttp(lStr.pStr, lStr.iLen);
+            std::string strHttp(pMsg, mstMsgCache.pBuffer->GetBuffLen());
             pWsMsg->SetHttpMsg(strHttp);
             sWsHandlerMgr->ProcMsg(pWsMsg);
-            iRet = 0;
+			mstMsgCache.pBuffer->SetBuffLen(0);
         }
     } else {
         ASSERT_RET_VALUE(!mstrProtocol.empty(), 1);
-        if (!mstMsgCache.pData) {
-            mstMsgCache.pData = (char*)do_malloc(lStr.iLen * sizeof(char));
-            memcpy(mstMsgCache.pData, lStr.pStr, lStr.iLen);
-            mstMsgCache.iTotal = lStr.iLen;
-            mstMsgCache.iUse = lStr.iLen;
-        }  else {
-            if (mstMsgCache.iTotal >= mstMsgCache.iUse + lStr.iLen) {
-                memcpy(mstMsgCache.pData + mstMsgCache.iUse, lStr.pStr, lStr.iLen);
-                mstMsgCache.iUse += lStr.iLen;
-            } else {
-                char* psrcTmp = (char*)do_malloc((lStr.iLen + mstMsgCache.iUse) * sizeof(char));
-                memcpy(psrcTmp, mstMsgCache.pData, mstMsgCache.iUse);
-                memcpy(psrcTmp + mstMsgCache.iUse, lStr.pStr, lStr.iLen);
-                DOFREE(mstMsgCache.pData);
-                mstMsgCache.pData = psrcTmp;
-                mstMsgCache.iUse += lStr.iLen;
-                mstMsgCache.iTotal = mstMsgCache.iUse;
-            }
-        }
-
-        do {
-            if (mpCli && mpCli->IsClosed()) {
-                break;
-            }
-
-            iRet = sWsMsgParse->DecodeMsg(&mstMsgCache, &mpMsg);
-            if (mpMsg) {
-                CWsMsg* pWsMsg = new CWsMsg(mstrProtocol, mpCli);
-                pWsMsg->SetMsg(mpMsg);
-                sWsHandlerMgr->ProcMsg(pWsMsg);
-                mpMsg = NULL;
-            }
-        } while (iRet == 0 && mstMsgCache.iUse >= WS_MIN_MSG_EXPECT_LEN && mstMsgCache.iCurFrameLen + mstMsgCache.iCurFrameIndex < mstMsgCache.iUse);
-    }
-
-    LOG_INFO("Leave CWsInput::ParseMsg");
-    return iRet;
-}
-
-int CWsInput::ProcMsg() {
-    LOG_INFO("Enter CWsInput::ProcMsg");
-    int iTryTime = 0;
-#define MAX_TRY_GET_MSG_NUM 3
-    for (;;) {
-        if (mpCli && mpCli->IsClosed()) {
-            break;
-        }
-
-        len_str lstr;
-        BZERO(lstr);
-        mcQueMsgMutex.Lock();
-        LOG_INFO("mqueMsg size:%d", (int)mqueMsg.size());
-        if (!mqueMsg.empty()) {
-            lstr = mqueMsg.front();
-            mqueMsg.pop();
-            iTryTime = 0;
-        }
-        mcQueMsgMutex.UnLock();
-
-        if (lstr.iLen <= 0 || !lstr.pStr) {
-            if (++iTryTime >= MAX_TRY_GET_MSG_NUM) {
-                break;
-            }
-
-            continue;
-        }
-
-        if (ParseMsg(lstr)) {
-            LOG_ERR("Parse Msg Error");
-            DOFREE(lstr.pStr);
-            mpCli->Close();
-            break;
-        }
-
-        DOFREE(lstr.pStr);
+		sWsMsgParse->DecodeMsg(&mstMsgCache, &mpMsg);
+		if (mpMsg) {
+			CWsMsg* pWsMsg = new CWsMsg(mstrProtocol, mpCli);
+			pWsMsg->SetMsg(mpMsg);
+			sWsHandlerMgr->ProcMsg(pWsMsg);
+			mpMsg = NULL;
+		}
     }
 
     return 0;
 }
 
+int CWsInput::ProcMsg() {
+	mcRecvBufferMutex.Lock();
+	if (mpRecvBuffer->GetBuffLen() > 0) {
+		mstMsgCache.pBuffer->Append(mpRecvBuffer->GetBuffer(), mpRecvBuffer->GetBuffLen());
+		mpRecvBuffer->SetBuffLen(0);
+	}
+	mcRecvBufferMutex.UnLock();
+
+	return ParseMsg();
+}
+
 int CWsInput::PushMsg(char* pMsg, ssize_t iLen) {
     ASSERT_RET_VALUE(pMsg && iLen > 0, 1);
-    len_str lstr;
-    lstr.iLen = iLen;
-    lstr.pStr = (char*)do_malloc(iLen * sizeof(char));
-    memcpy(lstr.pStr, pMsg, iLen);
-
-    mcQueMsgMutex.Lock();
-    mqueMsg.push(lstr);
-    mcQueMsgMutex.UnLock();
+    mcRecvBufferMutex.Lock();
+	mpRecvBuffer->Append(pMsg, iLen);
+	mcRecvBufferMutex.UnLock();
     return 0;
 }

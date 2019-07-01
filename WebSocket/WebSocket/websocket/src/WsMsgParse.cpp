@@ -6,12 +6,12 @@ CWsMsgParse::CWsMsgParse(){
 CWsMsgParse::~CWsMsgParse(){
 }
 
-len_str CWsMsgParse::EncodeMsg(const char* pData, const size_t iLen, int iFrameType) {
-    len_str lRet;
-    BZERO(lRet);
-    ASSERT_RET_VALUE(pData && iLen > 0, lRet);
+CMemBuffer* CWsMsgParse::EncodeMsg(CMemBuffer* pMsg, int iFrameType) {
+	ASSERT_RET_VALUE(pMsg, NULL);
+	const char* pData = (char*)pMsg->GetBuffer();
+	const size_t iLen = pMsg->GetBuffLen();
+    ASSERT_RET_VALUE(pData && iLen > 0, NULL);
     size_t frameSize = iLen;
-
     //flags byte.
     frameSize += 1; 
 
@@ -24,31 +24,43 @@ len_str CWsMsgParse::EncodeMsg(const char* pData, const size_t iLen, int iFrameT
         frameSize += 9;
     }
 
-    lRet.pStr = (char*)do_malloc((frameSize)*sizeof(char));
-    lRet.iLen = frameSize;
-
+	CMemBuffer* pRet = new CMemBuffer();
+	pRet->AllocBuffer(frameSize);
+	pRet->SetBuffLen(frameSize);
+	char* pRetMsg = (char*)pRet->GetBuffer();
     // fin位为1, 扩展位为0, 操作位为frameType  
-    lRet.pStr[0] = 0x80 | iFrameType;
-
+	pRetMsg[0] = 0x80 | iFrameType;
+	
     // 填充数据长度  
     if (iLen <= 125){
-        lRet.pStr[1] = (char)(iLen);
+		pRetMsg[1] = (char)(iLen);
     } else if (iLen > 125 && iLen <= 65535){
-        lRet.pStr[1] = 0x7e;
-
-        u_short uNetLen = htons((u_short)iLen);
-        memcpy(&lRet.pStr[2], &uNetLen, sizeof(uNetLen));
+		pRetMsg[1] = 0x7e;
+		char len[2];
+		len[0] = (iLen >> 8) & 255;
+		len[1] = (iLen)& 255;
+        memcpy(&pRetMsg[2], len, 2);
     } else{
-        lRet.pStr[1] = 0x7f;
-        u_long lNetLen = htonl((u_long)iLen);
-        memcpy(&lRet.pStr[2], &lNetLen, sizeof(lNetLen));
+		pRetMsg[1] = 0x7f;
+		char len[8];
+		len[0] = (iLen >> 56) & 255;
+		len[1] = (iLen >> 48) & 255;
+		len[2] = (iLen >> 40) & 255;
+		len[3] = (iLen >> 32) & 255;
+		len[4] = (iLen >> 24) & 255;
+		len[5] = (iLen >> 16) & 255;
+		len[6] = (iLen >> 8) & 255;
+		len[7] = (iLen)& 255;
+		memcpy(&pRetMsg[2], len, 8);
+		/* u_long lNetLen = htonl((u_long)iLen);
+		 memcpy(&lRet.pStr[2], &lNetLen, sizeof(lNetLen));*/
     }
 
     // 填充数据  
-    int iOffset = (int)(frameSize - iLen);
-    memcpy(lRet.pStr + iOffset, pData, iLen);
+    size_t iOffset = frameSize - iLen;
+    memcpy(pRetMsg + iOffset, pData, iLen);
 
-    return lRet;
+    return pRet;
 }
 
 int CWsMsgParse::TryDecodeLen(char* pData, tagWsMsgFrame& stFrame) {
@@ -87,23 +99,24 @@ int CWsMsgParse::TryDecodeLen(char* pData, tagWsMsgFrame& stFrame) {
 }
 
 int CWsMsgParse::DecodeMsg(tagWsMsgCache* pMsgCache, tagWsMsg** pWsMsg) {
-    ASSERT_RET_VALUE(pMsgCache && pWsMsg && pMsgCache->iUse > 0, 1);
-    LOG_INFO("Enter CWsMsgParse::DecodeMsg iCurFrameLen:%d iCurFrameIndex:%d iUse:%d", pMsgCache->iCurFrameLen, pMsgCache->iCurFrameIndex, pMsgCache->iUse);
-    if (pMsgCache->iCurFrameLen + pMsgCache->iCurFrameIndex > pMsgCache->iUse) {
+    ASSERT_RET_VALUE(pMsgCache && pWsMsg && pMsgCache->pBuffer  && pMsgCache->pBuffer->GetBuffLen() > 0, 1);
+    LOG_INFO("Enter CWsMsgParse::DecodeMsg iCurFrameLen:%I64u iCurFrameIndex:%I64u iUse:%I64u", pMsgCache->iCurFrameLen, pMsgCache->iCurFrameIndex, pMsgCache->pBuffer->GetBuffLen());
+    if (pMsgCache->iCurFrameLen + pMsgCache->iCurFrameIndex > pMsgCache->pBuffer->GetBuffLen()) {
         return 0;
     }
 
-    while (pMsgCache->iUse >= WS_MIN_MSG_EXPECT_LEN + pMsgCache->iCurFrameIndex) {
+    while (pMsgCache->pBuffer->GetBuffLen() >= WS_MIN_MSG_EXPECT_LEN + pMsgCache->iCurFrameIndex) {
         // fin位: 为1表示已接收完整报文, 为0表示继续监听后续报文  
+		char* pMsgPkg = (char*)pMsgCache->pBuffer->GetBuffer();
         bool bFin = true;
-        if ((pMsgCache->pData[pMsgCache->iCurFrameIndex] & 0x80) != 0x80) {
+        if ((pMsgPkg[pMsgCache->iCurFrameIndex] & 0x80) != 0x80) {
             bFin = false;
         }
 
         tagWsMsgFrame stFrame;
-        ASSERT_RET_VALUE(!TryDecodeLen(pMsgCache->pData + pMsgCache->iCurFrameIndex, stFrame), 1);
+        ASSERT_RET_VALUE(!TryDecodeLen(pMsgPkg + pMsgCache->iCurFrameIndex, stFrame), 1);
         pMsgCache->iCurFrameLen = stFrame.expectsize;
-        if (pMsgCache->iCurFrameLen + pMsgCache->iCurFrameIndex <= pMsgCache->iUse) {
+        if (pMsgCache->iCurFrameLen + pMsgCache->iCurFrameIndex <= pMsgCache->pBuffer->GetBuffLen()) {
             pMsgCache->iTotalFrameLen += stFrame.payloadLength;
             pMsgCache->iCurFrameIndex += pMsgCache->iCurFrameLen;
             if (bFin) {
@@ -116,46 +129,50 @@ int CWsMsgParse::DecodeMsg(tagWsMsgCache* pMsgCache, tagWsMsg** pWsMsg) {
     }
 
     if (pMsgCache->iComplete) {
-        LOG_INFO("Recv An Frame");
+        LOG_INFO("Recv An Frame Len:%I64u", pMsgCache->iTotalFrameLen);
         size_t iOffset = 0;
         size_t iPayloadOffset = 0;
-        while (pMsgCache->iCurFrameIndex > iOffset) {
+		char* pMsgPkg = (char*)pMsgCache->pBuffer->GetBuffer();
+        while (pMsgCache->iCurFrameIndex > iOffset && iPayloadOffset <= pMsgCache->iTotalFrameLen) {
             if (!(*pWsMsg)) {
-                *pWsMsg = (tagWsMsg*)do_malloc(sizeof(tagWsMsg));
-                (*pWsMsg)->payload = (char*)do_malloc((pMsgCache->iTotalFrameLen + 1)*sizeof(char));
-                (*pWsMsg)->payload[pMsgCache->iTotalFrameLen] = '\0';
+                *pWsMsg = new tagWsMsg();
+				(*pWsMsg)->pBuffer = new CMemBuffer();
             }
 
             tagWsMsg* pTmpWsMsg = *pWsMsg;
             tagWsMsgFrame stFrame;
-            ASSERT_RET_VALUE(!TryDecodeLen(pMsgCache->pData + iOffset, stFrame), 1);
+            ASSERT_RET_VALUE(!TryDecodeLen(pMsgPkg + iOffset, stFrame), 1);
             if (!pTmpWsMsg->frameType) {
                 pTmpWsMsg->frameType = stFrame.frameType;
             }
 
             ASSERT_RET_VALUE(pTmpWsMsg->frameType == stFrame.frameType || stFrame.frameType == WS_FRAME_CONTINUATION, 1);
-            memcpy(pTmpWsMsg->payload + iPayloadOffset, &pMsgCache->pData[iOffset + stFrame.payloadOffset], stFrame.payloadLength);
+			pTmpWsMsg->pBuffer->Append(&pMsgPkg[iOffset + stFrame.payloadOffset], stFrame.payloadLength);
             if (stFrame.mask && stFrame.payloadOffset > 4) {
                 // header: 2字节, masking key: 4字节  
-                const char *maskingKey = &pMsgCache->pData[stFrame.payloadOffset - 4];
-                for (int i = 0; i < stFrame.payloadLength; i++) {
-                    pTmpWsMsg->payload[iPayloadOffset + i] = pTmpWsMsg->payload[iPayloadOffset + i] ^ maskingKey[i % 4];
+                const char *maskingKey = &pMsgPkg[iOffset + stFrame.payloadOffset - 4];
+				char* pWsMsg = (char*)pTmpWsMsg->pBuffer->GetBuffer();
+                for (size_t i = 0; i < stFrame.payloadLength; i++) {
+					pWsMsg[iPayloadOffset + i] = pWsMsg[iPayloadOffset + i] ^ maskingKey[i % 4];
                 }
             }
 
             iOffset += stFrame.expectsize;
             iPayloadOffset += stFrame.payloadLength;
-            pTmpWsMsg->payloadLength += stFrame.payloadLength;
         }
 
-        ASSERT_RET_VALUE(*pWsMsg && (*pWsMsg)->payloadLength == pMsgCache->iTotalFrameLen, 1);
+        ASSERT_RET_VALUE(*pWsMsg && (*pWsMsg)->pBuffer->GetBuffLen() == pMsgCache->iTotalFrameLen, 1);
         pMsgCache->iComplete = 0;
         pMsgCache->iCurFrameIndex -= iOffset;
-        pMsgCache->iUse -= iOffset;
+		size_t iRemain = pMsgCache->pBuffer->GetBuffLen() - iOffset;
+		if (iRemain > 0) {
+			memmove(pWsMsg, pWsMsg + iOffset, iRemain);
+		}
+		pMsgCache->pBuffer->SetBuffLen(iRemain);
         pMsgCache->iTotalFrameLen -= iPayloadOffset;
         pMsgCache->iCurFrameLen = 0;
     }
    
-    LOG_INFO("Leave CWsMsgParse::DecodeMsg iCurFrameLen:%d iCurFrameIndex:%d iUse:%d", pMsgCache->iCurFrameLen, pMsgCache->iCurFrameIndex, pMsgCache->iUse);
+    LOG_INFO("Leave CWsMsgParse::DecodeMsg iCurFrameLen:%I64u iCurFrameIndex:%I64u iUse:%I64u", pMsgCache->iCurFrameLen, pMsgCache->iCurFrameIndex, pMsgCache->pBuffer->GetBuffLen());
     return 0;
 }

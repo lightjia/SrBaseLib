@@ -4,10 +4,24 @@
 #include "common.h"
 #include "LocalDefine.h"
 
+//macro
+#ifndef MAX
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#endif
+
+#ifndef MIN
+#define MIN(a, b) ((a) > (b) ? (b) : (a))
+#endif
+
+#ifndef ABS
+#define ABS(a, b) ((a) > (b) ? ((a) - (b)) : ((b) - (a)))
+#endif
+
 //mem
 #define DOFREE(X) do{if(NULL != X) {free(X); X = NULL;}}while(0)
 #define DODELETE(X) do{if(NULL != X) {delete X; X = NULL;}}while(0)
-#define BZERO(X) memset(&X, 0, sizeof(X))
+#define BZERO(X) memset(&(X), 0, sizeof(X))
+#define BZEROP(X) memset(X, 0, sizeof(*(X)))
 void* do_malloc(size_t iLen);
 
 //time

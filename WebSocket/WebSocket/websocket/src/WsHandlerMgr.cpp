@@ -54,12 +54,12 @@ int CWsHandlerMgr::ProcMsg(CWsMsg* pMsg) {
     CWsHandler* pHandler = GetHandler(pMsg->GetProtocol());
     ASSERT_RET_VALUE(pHandler, 1);
 
-    len_str lResult = pHandler->ProcMsg(pMsg);
-    if (lResult.pStr && lResult.iLen > 0 && pMsg->GetCli()) {
-        pMsg->GetCli()->Send(lResult.pStr, lResult.iLen);
+    CMemBuffer* pResult = pHandler->ProcMsg(pMsg);
+    if (pResult->GetBuffer() && pResult->GetBuffLen() > 0 && pMsg->GetCli()) {
+        pMsg->GetCli()->Send((char*)pResult->GetBuffer(), pResult->GetBuffLen());
     }
 
-    DOFREE(lResult.pStr);
+	DODELETE(pResult);
     DODELETE(pMsg);
     return 0;
 }

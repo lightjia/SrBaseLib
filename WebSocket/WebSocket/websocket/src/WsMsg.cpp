@@ -10,8 +10,8 @@ CWsMsg::CWsMsg(std::string& strProtocol, CWsCli* pCli){
 CWsMsg::~CWsMsg(){
     UNREF(mpCli);
     if (mpMsg) {
-        DOFREE(mpMsg->payload);
-        DOFREE(mpMsg);
+        DODELETE(mpMsg->pBuffer);
+		DODELETE(mpMsg);
     }
 }
 

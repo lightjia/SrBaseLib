@@ -6,17 +6,17 @@ CWsEchoHandler::CWsEchoHandler(){
 CWsEchoHandler::~CWsEchoHandler(){
 }
 
-len_str CWsEchoHandler::ProcMsg(CWsMsg* pMsg) {
+CMemBuffer* CWsEchoHandler::ProcMsg(CWsMsg* pMsg) {
     LOG_INFO("Enter CWsEchoHandler::ProcMsg");
-    len_str lRet;
-    BZERO(lRet);
-    ASSERT_RET_VALUE(pMsg, lRet);
+	CMemBuffer* pRet = NULL;
+    ASSERT_RET_VALUE(pMsg, pRet);
     if (pMsg->GetCli() && pMsg->GetMsg()) {
-        LOG_INFO("Echo Recv MsgLen:%ld Msg:%s", pMsg->GetMsg()->payloadLength, pMsg->GetMsg()->payload);
-        lRet = sWsMsgParse->EncodeMsg(pMsg->GetMsg()->payload, pMsg->GetMsg()->payloadLength, WS_FRAME_TEXT);
+		pMsg->GetMsg()->pBuffer->AppendNul();
+        LOG_INFO("Echo Recv MsgLen:%I64u Msg:%s", pMsg->GetMsg()->pBuffer->GetBuffLen(), (char*)pMsg->GetMsg()->pBuffer->GetBuffer());
+		pRet = sWsMsgParse->EncodeMsg(pMsg->GetMsg()->pBuffer, WS_FRAME_TEXT);
     } else {
         LOG_ERR("No Msg or No Cli");
     }
 
-    return lRet;
+    return pRet;
 }

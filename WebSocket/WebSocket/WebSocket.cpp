@@ -2,12 +2,22 @@
 //
 
 #include "stdafx.h"
-#include "CLogmanager.h"
+#include "Log.h"
 #include "WsMgr.h"
 #include "uv.h"
 int main(){
     init_platform();
-    sLog->Init(2, 5, ".");
+	tagLogInitParam stLogInitParam;
+    sLog->Init(stLogInitParam);
+	/*unsigned long iLen = 180000;
+	char* pMsg = (char*)do_malloc(iLen + 1);
+	for (unsigned long i = 0; i < iLen; ++i) {
+		pMsg[i] = 'a' + i % 26;
+	}
+	for (;;) {
+		LOG_INFO("%s", pMsg);
+		sleep_ms(2000);
+	}*/
     sWsMgr->Init();
     uv_run(uv_default_loop(), UV_RUN_DEFAULT);
     getchar();

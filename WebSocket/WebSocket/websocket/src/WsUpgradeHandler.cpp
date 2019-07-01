@@ -9,11 +9,10 @@ CWsUpgradeHandler::CWsUpgradeHandler(){
 CWsUpgradeHandler::~CWsUpgradeHandler(){
 }
 
-len_str CWsUpgradeHandler::ProcMsg(CWsMsg* pMsg) {
+CMemBuffer* CWsUpgradeHandler::ProcMsg(CWsMsg* pMsg) {
     LOG_INFO("Enter CWsUpgradeHandler::ProcMsg");
-    len_str lRet;
-    BZERO(lRet);
-    ASSERT_RET_VALUE(pMsg, lRet);
+	CMemBuffer* pRet = NULL;
+    ASSERT_RET_VALUE(pMsg, pRet);
     std::istringstream stream(pMsg->GetHttpMsg().c_str());
     std::string header;
     std::string::size_type pos = 0;
@@ -33,7 +32,7 @@ len_str CWsUpgradeHandler::ProcMsg(CWsMsg* pMsg) {
         }
     }
 
-    ASSERT_RET_VALUE(!websocketKey.empty(), lRet);
+    ASSERT_RET_VALUE(!websocketKey.empty(), pRet);
 
     // 填充http响应头信息 
 #define WS_UPGRADE_RESPONSE_LEN 600
@@ -42,10 +41,10 @@ len_str CWsUpgradeHandler::ProcMsg(CWsMsg* pMsg) {
     iOffset += snprintf(szTmp, WS_UPGRADE_RESPONSE_LEN, "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: upgrade\r\nSec-WebSocket-Accept: ");
     websocketKey += "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
     len_str lSha = sOpensslSha->Sha1((const unsigned char*)websocketKey.c_str(), (int)strlen(websocketKey.c_str()));
-    ASSERT_RET_VALUE(lSha.pStr && lSha.iLen > 0, lRet);
+    ASSERT_RET_VALUE(lSha.pStr && lSha.iLen > 0, pRet);
     len_str lEncode = sOpensslBase64->Base64Encode((char*)lSha.pStr, (int)lSha.iLen);
     DOFREE(lSha.pStr);
-    ASSERT_RET_VALUE(lEncode.pStr && lEncode.iLen > 0, lRet);
+    ASSERT_RET_VALUE(lEncode.pStr && lEncode.iLen > 0, pRet);
     iOffset += snprintf(szTmp + iOffset, WS_UPGRADE_RESPONSE_LEN - iOffset, "%s", lEncode.pStr);
     DOFREE(lEncode.pStr);
     if (!websocketProtocol.empty()){
@@ -55,13 +54,12 @@ len_str CWsUpgradeHandler::ProcMsg(CWsMsg* pMsg) {
     }
 
     iOffset += snprintf(szTmp + iOffset, WS_UPGRADE_RESPONSE_LEN - iOffset, "\r\n\r\n");
-    lRet.pStr = (char*)do_malloc(iOffset*sizeof(char));
-    lRet.iLen = iOffset;
-    memcpy(lRet.pStr, szTmp, iOffset);
+	pRet = new CMemBuffer();
+	pRet->Append(szTmp, iOffset);
     if (pMsg->GetCli() && pMsg->GetCli()->GetInut()) {
         pMsg->GetCli()->GetInut()->SetProtocol(websocketProtocol);
         pMsg->GetCli()->GetInut()->SetState(WS_STATE_CONNECT);
     }
 
-    return lRet;
+    return pRet;
 }

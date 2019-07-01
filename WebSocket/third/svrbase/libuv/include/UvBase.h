@@ -1,8 +1,8 @@
 #ifndef __CUVBASE__H_
 #define __CUVBASE__H_
 #include "uvdefine.h"
-#include "CLogmanager.h"
-class CUvBase {
+#include "Log.h"
+class CUvBase : public CMemOper{
 public:
     CUvBase();
     virtual ~CUvBase();

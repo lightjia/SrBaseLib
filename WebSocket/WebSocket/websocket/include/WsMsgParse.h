@@ -1,7 +1,7 @@
 #ifndef __CWSMSGPARSE__H_
 #define __CWSMSGPARSE__H_
 #include "wsprotocol.h"
-#include "CLogmanager.h"
+#include "Log.h"
 class CWsMsgParse : public CSingleton<CWsMsgParse>{
     SINGLE_CLASS_INITIAL(CWsMsgParse);
 public:
@@ -9,7 +9,7 @@ public:
 
 public:
     int DecodeMsg(tagWsMsgCache* pMsgCache, tagWsMsg** pWsMsg);
-    len_str EncodeMsg(const char* pData, const size_t iLen, int iFrameType);
+    CMemBuffer* EncodeMsg(CMemBuffer* pMsg, int iFrameType);
 
 private:
     int TryDecodeLen(char* pData, tagWsMsgFrame& stFrame);

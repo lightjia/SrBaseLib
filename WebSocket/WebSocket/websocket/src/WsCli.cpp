@@ -46,7 +46,7 @@ int CWsCli::OnClose() {
 }
 
 int CWsCli::OnSend(int iStatus) {
-    LOG_INFO("Enter CWsCli::OnSend:%d", iStatus);
+    LOG_INFO("Enter CWsCli::OnSend:%d iNeedSend:%I64u iTotalSend:%I64u", iStatus, GetNeedSendBytes(), GetTotalSendBytes());
     if (!iStatus) {
         miActiveTime = time(NULL);
     }
@@ -65,12 +65,10 @@ int CWsCli::TaskInit() {
 }
 
 int CWsCli::TaskExcute() {
-    LOG_INFO("Enter CWsCli::TaskExcute");
     if (!mcInputMutex.TryLock() && mpInput) {
         mpInput->ProcMsg();
         mcInputMutex.UnLock();
     }
-    LOG_INFO("Leave CWsCli::TaskExcute");
     return 0;
 }
 

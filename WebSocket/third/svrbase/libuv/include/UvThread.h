@@ -1,8 +1,8 @@
 #ifndef __CUVTHREAD__H_
 #define __CUVTHREAD__H_
 #include "uv.h"
-#include "UvSem.h"
-#include "CLogmanager.h"
+#include "UvCond.h"
+
 class CUvThread{
 public:
     CUvThread();
@@ -11,7 +11,7 @@ public:
 public:
     int Start();
     int Quit();
-    void Wait();
+    void Wait(uint64_t iUsec = 0);
     void Activate();
 
 public:
@@ -20,17 +20,15 @@ public:
 protected:
     virtual int OnThreadRun() = 0;
     virtual int OnThreadCreate();
-    virtual int OnThreadBeforeQuit();
     virtual int OnThreadQuit();
-    virtual int OnThreadDestroy();
 
 protected:
     bool mbQuit;
 
 private:
     uv_thread_t mstThread;
-    CUvSem mcUvSem;
-    bool m_bInit;
+    CUvCond mcUvThreadCond;
+    bool mbUvThreadInit;
 };
 
 #endif

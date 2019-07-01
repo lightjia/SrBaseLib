@@ -1,6 +1,7 @@
 #ifndef __WSPROTOCOL__H_
 #define __WSPROTOCOL__H_
 #include "LocalDefine.h"
+#include "MemBuffer.h"
 #include <stdint.h>
 
 enum WS_STATE{
@@ -41,9 +42,15 @@ struct tagWsMsgFrame{
 };
 
 struct tagWsMsgCache {
-    char* pData;
-    size_t iTotal;
-    size_t iUse;
+	tagWsMsgCache() {
+		pBuffer = NULL;
+		iCurFrameIndex = 0;
+		iCurFrameLen = 0;
+		iTotalFrameLen = 0;
+		iComplete = 0;
+	}
+
+	CMemBuffer* pBuffer;
     size_t iCurFrameIndex;
     size_t iCurFrameLen;
     size_t iTotalFrameLen;
@@ -51,8 +58,12 @@ struct tagWsMsgCache {
 };
 
 struct tagWsMsg {
-    char* payload;
-    size_t payloadLength;
+	tagWsMsg() {
+		pBuffer = NULL;
+		frameType = 0;
+	}
+
+	CMemBuffer* pBuffer;
     uint8_t frameType;
 };
 #pragma pack()

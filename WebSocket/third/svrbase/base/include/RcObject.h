@@ -1,6 +1,6 @@
 #ifndef __CRCOBJECT__H_
 #define __CRCOBJECT__H_
-#include "CLogmanager.h"
+#include "UvMutex.h"
 class CRcObject
 {
 public:
@@ -13,7 +13,7 @@ public:
 
 protected:
 	long mlReferCount;
-	CMutex mcRefMutex;
+	CUvMutex mcRefMutex;
 };
 
 #define REF(X) \
@@ -29,7 +29,7 @@ do{\
 if (NULL != (X) && (X)->DecRef() <= 0)	\
 {	\
 DODELETE(X);	\
-X = NULL;	\
 }\
+X = NULL;	\
 }while(0)
 #endif

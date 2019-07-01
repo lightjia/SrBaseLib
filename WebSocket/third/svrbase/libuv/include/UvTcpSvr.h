@@ -12,9 +12,13 @@ public:
 protected:
     virtual int OnAccept(uv_tcp_t* pUvTcp) = 0;//TODO free pUvTcp
     virtual uv_tcp_t* AllocTcpCli();
+	virtual int FreeTcpCli(uv_tcp_t* pTcpCli);
 
 protected:
     int Listen(int iBackLog = 5);
+
+private:
+	void DoConn(int iStatus);
 
 protected:
     uv_tcp_t* mpTcpSvr;

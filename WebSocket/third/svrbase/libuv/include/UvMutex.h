@@ -1,9 +1,10 @@
 #ifndef __CUVMUTEX__H_
 #define __CUVMUTEX__H_
 #include "uv.h"
-class CUvMutex{
+#include "Mutex.h"
+class CUvMutex : public CMutex{
 public:
-    CUvMutex();
+    CUvMutex(bool bRecursive = false);
     ~CUvMutex();
 
 public:
@@ -15,5 +16,4 @@ public:
 private:
     uv_mutex_t mstUvMutex;
 };
-
 #endif
