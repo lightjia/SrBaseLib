@@ -99,7 +99,8 @@ int CWsMsgParse::TryDecodeLen(char* pData, tagWsMsgFrame& stFrame) {
 }
 
 int CWsMsgParse::DecodeMsg(tagWsMsgCache* pMsgCache, tagWsMsg** pWsMsg) {
-    ASSERT_RET_VALUE(pMsgCache && pWsMsg && pMsgCache->pBuffer  && pMsgCache->pBuffer->GetBuffLen() > 0, 1);
+	int iRet = 0;
+    ASSERT_RET_VALUE(pMsgCache && pWsMsg && pMsgCache->pBuffer, iRet);
     LOG_INFO("Enter CWsMsgParse::DecodeMsg iCurFrameLen:%I64u iCurFrameIndex:%I64u iUse:%I64u", pMsgCache->iCurFrameLen, pMsgCache->iCurFrameIndex, pMsgCache->pBuffer->GetBuffLen());
     if (pMsgCache->iCurFrameLen + pMsgCache->iCurFrameIndex > pMsgCache->pBuffer->GetBuffLen()) {
         return 0;
@@ -114,7 +115,7 @@ int CWsMsgParse::DecodeMsg(tagWsMsgCache* pMsgCache, tagWsMsg** pWsMsg) {
         }
 
         tagWsMsgFrame stFrame;
-        ASSERT_RET_VALUE(!TryDecodeLen(pMsgPkg + pMsgCache->iCurFrameIndex, stFrame), 1);
+        ASSERT_RET_VALUE(!TryDecodeLen(pMsgPkg + pMsgCache->iCurFrameIndex, stFrame), iRet);
         pMsgCache->iCurFrameLen = stFrame.expectsize;
         if (pMsgCache->iCurFrameLen + pMsgCache->iCurFrameIndex <= pMsgCache->pBuffer->GetBuffLen()) {
             pMsgCache->iTotalFrameLen += stFrame.payloadLength;
@@ -122,6 +123,7 @@ int CWsMsgParse::DecodeMsg(tagWsMsgCache* pMsgCache, tagWsMsg** pWsMsg) {
 			pMsgCache->iCurFrameLen = 0;
             if (bFin) {
                 pMsgCache->iComplete = 1;
+				iRet = 1;
                 break;
             }
         } else {
@@ -175,5 +177,5 @@ int CWsMsgParse::DecodeMsg(tagWsMsgCache* pMsgCache, tagWsMsg** pWsMsg) {
     }
    
     LOG_INFO("Leave CWsMsgParse::DecodeMsg iCurFrameLen:%I64u iCurFrameIndex:%I64u iUse:%I64u", pMsgCache->iCurFrameLen, pMsgCache->iCurFrameIndex, pMsgCache->pBuffer->GetBuffLen());
-    return 0;
+    return iRet;
 }

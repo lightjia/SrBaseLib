@@ -3,6 +3,7 @@
 #include "Task.h"
 #include "UvTcpCli.h"
 #include "WsInput.h"
+#include "UvSem.h"
 class CWsCli : public CUvTcpCli, public CTask{
 public:
     CWsCli();
@@ -26,9 +27,9 @@ protected:
     int OnInit();
 
 private:
+	CUvSem mcUvSem;
     bool mbCloseFlag;
     CWsInput* mpInput;
-    CUvMutex mcInputMutex;
     time_t miActiveTime;
 };
 

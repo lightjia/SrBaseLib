@@ -27,7 +27,7 @@ int CWsCli::OnRecv(ssize_t nRead, const uv_buf_t* pBuf) {
     if (nRead > 0 && mpInput) {
         miActiveTime = time(NULL);
         mpInput->PushMsg(pBuf->base, nRead);
-        sUvTaskPool->PushTask((CTask*)this);
+		mcUvSem.Post();
     } else {
         LOG_ERR("No Handler");
     }
@@ -65,9 +65,9 @@ int CWsCli::TaskInit() {
 }
 
 int CWsCli::TaskExcute() {
-    if (!mcInputMutex.TryLock() && mpInput) {
+	while(!mbCloseFlag){
+		mcUvSem.Wait();
         mpInput->ProcMsg();
-        mcInputMutex.UnLock();
     }
     return 0;
 }

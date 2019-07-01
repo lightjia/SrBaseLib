@@ -46,12 +46,13 @@ int CWsInput::ParseMsg() {
         }
     } else {
         ASSERT_RET_VALUE(!mstrProtocol.empty(), 1);
-		sWsMsgParse->DecodeMsg(&mstMsgCache, &mpMsg);
-		if (mpMsg) {
-			CWsMsg* pWsMsg = new CWsMsg(mstrProtocol, mpCli);
-			pWsMsg->SetMsg(mpMsg);
-			sWsHandlerMgr->ProcMsg(pWsMsg);
-			mpMsg = NULL;
+		while (sWsMsgParse->DecodeMsg(&mstMsgCache, &mpMsg)) {
+			if (mpMsg) {
+				CWsMsg* pWsMsg = new CWsMsg(mstrProtocol, mpCli);
+				pWsMsg->SetMsg(mpMsg);
+				sWsHandlerMgr->ProcMsg(pWsMsg);
+				mpMsg = NULL;
+			}
 		}
     }
 
