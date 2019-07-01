@@ -5,13 +5,13 @@ CWsCli::CWsCli(){
     mbCloseFlag = false;
     mpInput = NULL;
     miActiveTime = time(NULL);
-    LOG_INFO("new cli:%p", this);
+    LOG_INFO("new cli:%s", GetNetId().c_str());
 }
 
 CWsCli::~CWsCli(){
     DODELETE(mpInput);
-    DOFREE(mpTcpCli);
-    LOG_INFO("Del cli:%p", this);
+    MemFree(mpTcpCli);
+    LOG_INFO("Del cli:%s", GetNetId().c_str());
 }
 
 void CWsCli::OnTick() {
@@ -41,7 +41,7 @@ int CWsCli::OnConn(int iStatus) {
 
 int CWsCli::OnClose() {
     mbCloseFlag = true;
-    LOG_INFO("cli close:%p", this);
+    LOG_INFO("cli close:%s", GetNetId().c_str());
     return 0;
 }
 

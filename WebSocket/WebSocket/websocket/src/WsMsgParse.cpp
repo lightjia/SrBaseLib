@@ -119,6 +119,7 @@ int CWsMsgParse::DecodeMsg(tagWsMsgCache* pMsgCache, tagWsMsg** pWsMsg) {
         if (pMsgCache->iCurFrameLen + pMsgCache->iCurFrameIndex <= pMsgCache->pBuffer->GetBuffLen()) {
             pMsgCache->iTotalFrameLen += stFrame.payloadLength;
             pMsgCache->iCurFrameIndex += pMsgCache->iCurFrameLen;
+			pMsgCache->iCurFrameLen = 0;
             if (bFin) {
                 pMsgCache->iComplete = 1;
                 break;
@@ -166,7 +167,7 @@ int CWsMsgParse::DecodeMsg(tagWsMsgCache* pMsgCache, tagWsMsg** pWsMsg) {
         pMsgCache->iCurFrameIndex -= iOffset;
 		size_t iRemain = pMsgCache->pBuffer->GetBuffLen() - iOffset;
 		if (iRemain > 0) {
-			memmove(pWsMsg, pWsMsg + iOffset, iRemain);
+			memmove(pMsgPkg, pMsgPkg + iOffset, iRemain);
 		}
 		pMsgCache->pBuffer->SetBuffLen(iRemain);
         pMsgCache->iTotalFrameLen -= iPayloadOffset;
