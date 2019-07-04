@@ -42,8 +42,9 @@ int CWsInput::ParseMsg() {
             std::string strHttp(pMsg, mstMsgCache.pBuffer->GetBuffLen());
             pWsMsg->SetHttpMsg(strHttp);
             sWsHandlerMgr->ProcMsg(pWsMsg);
-			mstMsgCache.pBuffer->SetBuffLen(0);
         }
+
+		mstMsgCache.pBuffer->SetBuffLen(0);
     } else {
         ASSERT_RET_VALUE(!mstrProtocol.empty(), 1);
 		while (sWsMsgParse->DecodeMsg(&mstMsgCache, &mpMsg)) {
