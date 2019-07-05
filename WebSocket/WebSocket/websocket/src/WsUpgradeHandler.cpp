@@ -40,13 +40,12 @@ CMemBuffer* CWsUpgradeHandler::ProcMsg(CWsMsg* pMsg) {
     int iOffset = 0;
     iOffset += snprintf(szTmp, WS_UPGRADE_RESPONSE_LEN, "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: upgrade\r\nSec-WebSocket-Accept: ");
     websocketKey += "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-    len_str lSha = sOpensslSha->Sha1((const unsigned char*)websocketKey.c_str(), (int)strlen(websocketKey.c_str()));
-    ASSERT_RET_VALUE(lSha.pStr && lSha.iLen > 0, pRet);
-    len_str lEncode = sOpensslBase64->Base64Encode((char*)lSha.pStr, (int)lSha.iLen);
-    DOFREE(lSha.pStr);
-    ASSERT_RET_VALUE(lEncode.pStr && lEncode.iLen > 0, pRet);
-    iOffset += snprintf(szTmp + iOffset, WS_UPGRADE_RESPONSE_LEN - iOffset, "%s", lEncode.pStr);
-    DOFREE(lEncode.pStr);
+    std::string strSha = sOpensslSha->Sha1((const unsigned char*)websocketKey.c_str(), (int)strlen(websocketKey.c_str()));
+    CMemBuffer* pEncode = sOpensslBase64->Base64Encode((char*)strSha.c_str(), (int)strSha.size());
+    ASSERT_RET_VALUE(pEncode && pEncode->GetBuffer() && pEncode->GetBuffLen() > 0, pRet);
+	pEncode->AppendNul();
+    iOffset += snprintf(szTmp + iOffset, WS_UPGRADE_RESPONSE_LEN - iOffset, "%s", (char*)pEncode->GetBuffer());
+    DODELETE(pEncode);
     if (!websocketProtocol.empty()){
         iOffset += snprintf(szTmp + iOffset, WS_UPGRADE_RESPONSE_LEN - iOffset, "\r\nSec-WebSocket-Protocol: %s", websocketProtocol.c_str());
     } else {
